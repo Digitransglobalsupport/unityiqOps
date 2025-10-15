@@ -726,6 +726,14 @@ class FinanceDashboardTester:
         
         # Invite as VIEWER
         viewer_invite_token = self.test_invite_member(owner_email, org_name, viewer_email, "VIEWER")
+        if not viewer_invite_token:
+            # Try to find the invite token manually
+            time.sleep(2)
+            invite_email = self.find_email_by_action("invite", viewer_email)
+            if invite_email and invite_email.get("token"):
+                viewer_invite_token = invite_email["token"]
+                self.log_test("Manual Invite Token Found", True, "Found invite token manually")
+        
         if viewer_invite_token:
             self.test_accept_invite(viewer_email, viewer_invite_token)
         
