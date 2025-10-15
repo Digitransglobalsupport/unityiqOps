@@ -1468,7 +1468,7 @@ async def billing_checkout(body: CheckoutBody, ctx: RequestContext = Depends(req
     # deny if already >= LITE
     current = await db.plans.find_one({"org_id": body.org_id})
     if current and current.get("tier") in ("LITE","PRO"):
-        raise HTTPException(status_code=400, detail="ERR_PLAN_ALREADY_ACTIVATED")
+        raise HTTPException(status_code=409, detail="ERR_PLAN_ALREADY_ACTIVATED")
     try:
         session = stripe.checkout.Session.create(
             mode="payment",
