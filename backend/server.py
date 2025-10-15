@@ -337,6 +337,27 @@ async def login(payload: LoginRequest, request: Request):
     await audit_log_entry(None, user_id, "login", "user", {})
     return TokenResponse(access_token=access, refresh_token=refresh_plain, expires_in=ACCESS_TTL_MIN*60)
 
+# Convenience GET endpoint for verification via link
+@api.get("/auth/verify-email")
+async def verify_email_get(token: str):
+    from fastapi.responses import RedirectResponse
+    try:
+        data = decode_jwt(token)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    if data.get("typ") != "email_verify":
+        raise HTTPException(status_code=400, detail="Invalid token type")
+    user_id = data.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid token payload")
+    res = await db.users.update_one({"user_id": user_id}, {"$set": {"email_verified": True}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    await audit_log_entry(None, user_id, "verify_email", "user", {})
+    return RedirectResponse(url="/login?verified=1", status_code=302)
+
 @api.post("/auth/refresh", response_model=TokenResponse)
 async def refresh(payload: RefreshRequest):
     rhash = hashlib.sha256(payload.refresh_token.encode()).hexdigest()
