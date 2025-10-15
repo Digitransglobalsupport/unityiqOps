@@ -1,0 +1,203 @@
+{
+  "summary": {
+    "total_tests": 28,
+    "passed_tests": 28,
+    "success_rate": 100.0
+  },
+  "detailed_results": [
+    {
+      "test": "Signup",
+      "success": true,
+      "details": "User test_user_1760534117@example.com created successfully",
+      "timestamp": "2025-10-15T13:15:17.664531"
+    },
+    {
+      "test": "Signup Email Sent",
+      "success": true,
+      "details": "Verification email found in dev store",
+      "timestamp": "2025-10-15T13:15:18.705266"
+    },
+    {
+      "test": "Email Verification",
+      "success": true,
+      "details": "Email verified successfully",
+      "timestamp": "2025-10-15T13:15:18.744117"
+    },
+    {
+      "test": "Login",
+      "success": true,
+      "details": "Login successful for test_user_1760534117@example.com",
+      "timestamp": "2025-10-15T13:15:19.046914"
+    },
+    {
+      "test": "Password Reset Request",
+      "success": true,
+      "details": "Reset request sent",
+      "timestamp": "2025-10-15T13:15:19.089844"
+    },
+    {
+      "test": "Reset Email Sent",
+      "success": true,
+      "details": "Reset email found in dev store",
+      "timestamp": "2025-10-15T13:15:20.126459"
+    },
+    {
+      "test": "Password Reset",
+      "success": true,
+      "details": "Password reset successful",
+      "timestamp": "2025-10-15T13:15:20.391481"
+    },
+    {
+      "test": "Login",
+      "success": true,
+      "details": "Login successful for test_user_1760534117@example.com",
+      "timestamp": "2025-10-15T13:15:20.652244"
+    },
+    {
+      "test": "Create Organization",
+      "success": true,
+      "details": "Org 'TestOrg_1760534120' created with ID d0cd2473-0392-4645-b61f-e05a6b58e4e6",
+      "timestamp": "2025-10-15T13:15:20.693970"
+    },
+    {
+      "test": "List Organizations",
+      "success": true,
+      "details": "Found 1 orgs: ['TestOrg_1760534120']",
+      "timestamp": "2025-10-15T13:15:20.734677"
+    },
+    {
+      "test": "Signup",
+      "success": true,
+      "details": "User test_user_1760534120@example.com created successfully",
+      "timestamp": "2025-10-15T13:15:20.995337"
+    },
+    {
+      "test": "Signup Email Sent",
+      "success": true,
+      "details": "Verification email found in dev store",
+      "timestamp": "2025-10-15T13:15:22.036126"
+    },
+    {
+      "test": "Email Verification",
+      "success": true,
+      "details": "Email verified successfully",
+      "timestamp": "2025-10-15T13:15:22.073495"
+    },
+    {
+      "test": "Login",
+      "success": true,
+      "details": "Login successful for test_user_1760534120@example.com",
+      "timestamp": "2025-10-15T13:15:22.333265"
+    },
+    {
+      "test": "Invite Member",
+      "success": true,
+      "details": "Invited test_user_1760534120@example.com as VIEWER to TestOrg_1760534120",
+      "timestamp": "2025-10-15T13:15:22.414795"
+    },
+    {
+      "test": "Invite Email Sent",
+      "success": true,
+      "details": "Invite email found in dev store",
+      "timestamp": "2025-10-15T13:15:23.477037"
+    },
+    {
+      "test": "Accept Invite",
+      "success": true,
+      "details": "Invite accepted by test_user_1760534120@example.com",
+      "timestamp": "2025-10-15T13:15:23.517500"
+    },
+    {
+      "test": "Signup",
+      "success": true,
+      "details": "User test_user_1760534123@example.com created successfully",
+      "timestamp": "2025-10-15T13:15:23.786864"
+    },
+    {
+      "test": "Signup Email Sent",
+      "success": true,
+      "details": "Verification email found in dev store",
+      "timestamp": "2025-10-15T13:15:24.823152"
+    },
+    {
+      "test": "Email Verification",
+      "success": true,
+      "details": "Email verified successfully",
+      "timestamp": "2025-10-15T13:15:24.858843"
+    },
+    {
+      "test": "Login",
+      "success": true,
+      "details": "Login successful for test_user_1760534123@example.com",
+      "timestamp": "2025-10-15T13:15:25.122921"
+    },
+    {
+      "test": "Invite Member",
+      "success": true,
+      "details": "Invited test_user_1760534123@example.com as ADMIN to TestOrg_1760534120",
+      "timestamp": "2025-10-15T13:15:25.170951"
+    },
+    {
+      "test": "Invite Email Sent",
+      "success": true,
+      "details": "Invite email found in dev store",
+      "timestamp": "2025-10-15T13:15:26.209982"
+    },
+    {
+      "test": "Accept Invite",
+      "success": true,
+      "details": "Invite accepted by test_user_1760534123@example.com",
+      "timestamp": "2025-10-15T13:15:26.265386"
+    },
+    {
+      "test": "RBAC: VIEWER Cannot Invite",
+      "success": true,
+      "details": "VIEWER correctly denied invite permission",
+      "timestamp": "2025-10-15T13:15:26.304391"
+    },
+    {
+      "test": "RBAC: ADMIN Can Invite",
+      "success": true,
+      "details": "ADMIN successfully invited member",
+      "timestamp": "2025-10-15T13:15:26.344889"
+    },
+    {
+      "test": "Audit Logs Access",
+      "success": true,
+      "details": "Retrieved 4 audit log entries",
+      "timestamp": "2025-10-15T13:15:26.386373"
+    },
+    {
+      "test": "Context Injection: Header Required",
+      "success": true,
+      "details": "X-Org-Id header correctly required",
+      "timestamp": "2025-10-15T13:15:26.421576"
+    }
+  ],
+  "test_data": {
+    "users": {
+      "test_user_1760534117@example.com": {
+        "email": "test_user_1760534117@example.com",
+        "password": "NewSecurePass456!",
+        "verified": true
+      },
+      "test_user_1760534120@example.com": {
+        "email": "test_user_1760534120@example.com",
+        "password": "SecurePass123!",
+        "verified": true
+      },
+      "test_user_1760534123@example.com": {
+        "email": "test_user_1760534123@example.com",
+        "password": "SecurePass123!",
+        "verified": true
+      }
+    },
+    "orgs": {
+      "TestOrg_1760534120": {
+        "org_id": "d0cd2473-0392-4645-b61f-e05a6b58e4e6",
+        "name": "TestOrg_1760534120",
+        "owner": "test_user_1760534117@example.com"
+      }
+    }
+  }
+}
