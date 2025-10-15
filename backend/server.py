@@ -1152,11 +1152,25 @@ async def ingest_spend_csv(org_id: str = Form(...), spend: UploadFile | None = F
 
     # Write spend_lines
     to_insert = []
+    from datetime import date as _date
+    def valid_date(s: str) -> bool:
+        try:
+            y,m,d = [int(x) for x in (s or '').split('-')]
+            _ = _date(y,m,d)
+            return True
+        except:
+            return False
     for r in spend_rows:
+        # amount validation
         try:
             amt = float(r.get("amount", 0) or 0)
         except:
-            amt = 0
+            warnings.append("spend line amount parse failed – row skipped")
+            continue
+        # date validation
+        if not valid_date(r.get("date", "")):
+            warnings.append("spend line date invalid – row skipped")
+            continue
         cat = None
         txt = f"{r.get('vendor','')} {r.get('description','')} {r.get('gl_code','')}".upper()
         for cat_name, kws in CATEGORIES.items():
