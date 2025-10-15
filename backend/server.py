@@ -1599,50 +1599,6 @@ async def crm_dashboard(org_id: str, ctx: RequestContext = Depends(require_role(
 
     await audit_log_entry(org_id, ctx.user_id, "finance_csv", "ingest", {"ingested": ingested, "warnings": len(warnings)})
     return {"ok": True, "ingested": ingested, "warnings": warnings}
-
-    email = payload.email.lower()
-    role = payload.role
-    invited_user = await db.users.find_one({"email": email}, {"_id": 0})
-    if invited_user:
-        # create active membership if not exists
-        existing = await db.memberships.find_one({"org_id": org_id, "user_id": invited_user["user_id"]})
-        if existing:
-            raise HTTPException(status_code=400, detail="User already a member or invited")
-        await db.memberships.insert_one({
-            "membership_id": str(uuid.uuid4()),
-            "user_id": invited_user["user_id"],
-            "org_id": org_id,
-            "role": role,
-            "invited_by": ctx.user_id,
-            "status": "ACTIVE",
-        })
-    else:
-        # pending invite (no user yet)
-        await db.memberships.insert_one({
-            "membership_id": str(uuid.uuid4()),
-            "user_id": None,
-            "invited_email": email,
-            "org_id": org_id,
-            "role": role,
-            "invited_by": ctx.user_id,
-            "status": "INVITED",
-        })
-    # Send invite email via DEV store
-    invite_token = sign_jwt({"org_id": org_id, "email": email, "typ": "invite"}, 7*24*3600)
-    # Fetch org for clarity fields
-    org = await db.orgs.find_one({"org_id": org_id}, {"_id": 0, "name": 1})
-    await send_dev_email(
-        to=email,
-        subject=f"You're invited to join {org.get('name') if org else 'an organization'}",
-        body=f"Join org: /api/invites/accept?token={invite_token}",
-        action="invite",
-        token=invite_token,
-        url_path=f"/api/invites/accept?token={invite_token}",
-    )
-    # Also store extra clarity fields
-    await db.dev_emails.update_one({"token": invite_token}, {"$set": {"org_name": (org or {}).get("name"), "role": role}}, upsert=False)
-    await audit_log_entry(org_id, ctx.user_id, "invite", "membership", {"email": email, "role": role})
-    return {"message": "Invitation sent"}
 @api.post("/invites/accept")
 async def accept_invite(payload: VerifyEmailRequest, ctx_user: dict = Depends(get_current_user)):
     # token contains org_id and email (invited)
