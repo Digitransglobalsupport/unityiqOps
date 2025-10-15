@@ -147,6 +147,41 @@ async def send_dev_email(to: str, subject: str, body: str, action: str, token: O
     }
     await db.dev_emails.insert_one(email_doc)
 
+# --- Encryption Utilities (Per-org derived key from APP_ENCRYPTION_KEY) ---
+import base64
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+MASTER_KEY_B64 = os.environ.get("APP_ENCRYPTION_KEY")
+try:
+    MASTER_KEY = base64.b64decode(MASTER_KEY_B64) if MASTER_KEY_B64 else None
+except Exception:
+    MASTER_KEY = None
+
+if MASTER_KEY is None:
+    # Dev fallback ephemeral
+    MASTER_KEY = hashlib.sha256((os.environ.get("MONGO_URL", "") + "-enc-key").encode()).digest()
+
+def derive_org_key(org_id: str) -> bytes:
+    hkdf = HKDF(algorithm=hashes.SHA256(), length=32, salt=org_id.encode(), info=b"unityops-org-key")
+    return hkdf.derive(MASTER_KEY)
+
+def aesgcm_encrypt_for_org(org_id: str, plaintext: str) -> Dict[str, str]:
+    key = derive_org_key(org_id)
+    aes = AESGCM(key)
+    nonce = os.urandom(12)
+    ct = aes.encrypt(nonce, plaintext.encode(), None)
+    return {"alg": "AESGCM", "nonce": base64.b64encode(nonce).decode(), "ciphertext": base64.b64encode(ct).decode()}
+
+def aesgcm_decrypt_for_org(org_id: str, enc: Dict[str, str]) -> str:
+    key = derive_org_key(org_id)
+    aes = AESGCM(key)
+    nonce = base64.b64decode(enc["nonce"])  # type: ignore
+    ct = base64.b64decode(enc["ciphertext"])  # type: ignore
+    pt = aes.decrypt(nonce, ct, None)
+    return pt.decode()
+
 # --- Auth & Context Dependencies ---
 class RequestContext(BaseModel):
     user_id: str
