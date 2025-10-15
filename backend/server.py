@@ -1398,6 +1398,78 @@ async def spend_refresh(body: Dict[str, Any], ctx: RequestContext = Depends(requ
             "type": "TailCleanup",
             "vendors": [v.get("vendor_id") for v in vendor_items if v.get("annual_spend",0) < 300],
             "companies": list({c for v in vendor_items if v.get("annual_spend",0) < 300 for c in v.get("companies", [])}),
+
+# --- Billing: Stripe Lite Checkout ---
+import stripe
+
+STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY")
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
+APP_URL = os.environ.get("APP_URL", "http://localhost:3000")
+if STRIPE_SECRET_KEY:
+    stripe.api_key = STRIPE_SECRET_KEY
+
+class CheckoutBody(BaseModel):
+    org_id: str
+    plan: str
+
+@api.get("/plans")
+async def get_plan(org_id: str, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    plan = await db.plans.find_one({"org_id": org_id}, {"_id": 0})
+    ent = await db.entitlements.find_one({"org_id": org_id}, {"_id": 0})
+    return {"plan": plan, "entitlements": ent}
+
+@api.post("/billing/checkout")
+async def billing_checkout(body: CheckoutBody, ctx: RequestContext = Depends(require_role("OWNER"))):
+    if ctx.org_id != body.org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    # deny if already >= LITE
+    current = await db.plans.find_one({"org_id": body.org_id})
+    if current and current.get("tier") in ("LITE","PRO"):
+        raise HTTPException(status_code=400, detail="ERR_PLAN_ALREADY_ACTIVATED")
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            payment_method_types=["card"],
+            line_items=[{"price_data": {"currency": "gbp", "product_data": {"name": "UnityOps Snapshot (LITE)"}, "unit_amount": 99700}, "quantity": 1}],
+            success_url=f"{APP_URL}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{APP_URL}/billing/cancelled",
+            metadata={"org_id": body.org_id, "plan": body.plan},
+        )
+        return {"url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="ERR_CHECKOUT_CREATE")
+
+from fastapi import Header
+
+@api.post("/billing/webhook")
+async def billing_webhook(request: Request, stripe_signature: str = Header(None)):
+    if not STRIPE_WEBHOOK_SECRET:
+        return {"ok": True}
+    payload = await request.body()
+    try:
+        event = stripe.Webhook.construct_event(payload=payload, sig_header=stripe_signature, secret=STRIPE_WEBHOOK_SECRET)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    if event["type"] == "checkout.session.completed":
+        data = event["data"]["object"]
+        meta = data.get("metadata", {})
+        org_id = meta.get("org_id")
+        plan = meta.get("plan")
+        if org_id and plan == "LITE":
+            # idempotency on event id
+            eid = event.get("id")
+            exists = await db.billing_events.find_one({"stripe_id": eid})
+            if not exists:
+                await db.plans.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "tier": "LITE", "limits": {"companies":3, "connectors":1, "exports": True}, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+                await db.entitlements.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "snapshot_enabled": True, "activated_at": datetime.now(timezone.utc)}}, upsert=True)
+                await db.billing_events.insert_one({"org_id": org_id, "type": "checkout.session.completed", "stripe_id": eid, "amount": data.get("amount_total"), "currency": data.get("currency"), "ts": datetime.now(timezone.utc)})
+    return {"ok": True}
+
             "category": "Vendors",
             "est_saving": round(tail_total),
             "status": "open",
