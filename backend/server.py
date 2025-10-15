@@ -838,10 +838,15 @@ async def crm_dedupe_run(ctx: RequestContext = Depends(require_role("ANALYST")))
     # Build domain map from companies
     domain_to_company = { (c.get("domain") or "").lower(): c for c in companies }
     master: Dict[str, Dict[str, Any]] = {}
-    pairs: List[Dict[str, Any]] = []
 
     def norm_phone(p: str) -> str:
         return ''.join(ch for ch in (p or '') if ch.isdigit())[-10:]
+
+    def conf_from(email: str, name_a: str, name_b: str) -> float:
+        if email:
+            return 1.0
+        sim = fuzz.token_sort_ratio(name_a, name_b) / 100.0 if name_a and name_b else 0.8
+        return min(1.0, 0.8 + 0.2*sim)
 
     for ct in contacts:
         email = (ct.get("email") or "").lower()
@@ -858,7 +863,7 @@ async def crm_dedupe_run(ctx: RequestContext = Depends(require_role("ANALYST")))
                 "emails": [email] if email else [],
                 "domains": [domain] if domain else [],
                 "companies": [],
-                "confidence": 1.0 if email else 0.8
+                "confidence": conf_from(email, name, name)
             }
         else:
             # fuzzy boost if same name similar
@@ -875,12 +880,35 @@ async def crm_dedupe_run(ctx: RequestContext = Depends(require_role("ANALYST")))
             if comp_entry not in master[key]["companies"]:
                 master[key]["companies"].append(comp_entry)
 
+    # Build list and review_state
     master_list = list(master.values())
+    for m in master_list:
+        m_conf = m.get("confidence", 0)
+        m["review_state"] = "auto" if m_conf >= 0.85 else ("needs_review" if m_conf >= 0.7 else "auto")
+
+    # Compute borderline match pairs (0.7–0.85) between masters sharing a domain or similar name
+    pairs: List[Dict[str, Any]] = []
+    for i in range(len(master_list)):
+        for j in range(i+1, len(master_list)):
+            a = master_list[i]; b = master_list[j]
+            # quick domain overlap
+            if set(a.get("domains", [])) & set(b.get("domains", [])) or fuzz.token_sort_ratio(a.get("canonical_name",""), b.get("canonical_name","")) >= 70:
+                conf = fuzz.token_sort_ratio(a.get("canonical_name",""), b.get("canonical_name","")) / 100.0
+                if 0.7 <= conf < 0.85:
+                    pairs.append({
+                        "pair_id": str(uuid.uuid4()),
+                        "left_id": a["master_id"],
+                        "right_id": b["master_id"],
+                        "confidence": round(conf, 2),
+                        "fields": {"names": [a.get("canonical_name"), b.get("canonical_name")], "domains": [a.get("domains", []), b.get("domains", [])]},
+                        "status": "pending"
+                    })
+
     # Persist
     await db.customer_master.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": master_list, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
     await db.match_pairs.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": pairs, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
-    await audit_log_entry(org_id, ctx.user_id, "crm_dedupe", "crm", {"masters": len(master_list)})
-    return {"ok": True, "masters": len(master_list)}
+    await audit_log_entry(org_id, ctx.user_id, "crm_dedupe", "crm", {"masters": len(master_list), "pairs": len(pairs)})
+    return {"ok": True, "masters": len(master_list), "pairs": len(pairs)}
 
 # Cross-Sell Recommender
 @api.post("/crm/cross-sell/run")
