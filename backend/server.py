@@ -209,6 +209,21 @@ async def get_current_user(request: Request) -> dict:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified")
     return user
 
+# --- Plan limits helpers ---
+async def get_plan_limits(org_id: str) -> Dict[str, Any]:
+    plan = await db.plans.find_one({"org_id": org_id}) or {"tier": "FREE", "limits": {"companies": 1, "connectors": 0, "exports": False}}
+    tier = plan.get("tier", "FREE")
+    limits = plan.get("limits") or {}
+    if tier == "FREE":
+        return {"tier": tier, "companies": 1, "connectors": 0, "exports": False, "alerts": False}
+    if tier == "LITE":
+        return {"tier": tier, "companies": 3, "connectors": 1, "exports": True, "alerts": True}
+    if tier == "PRO":
+        return {"tier": tier, "companies": 10, "connectors": 3, "exports": True, "alerts": True}
+    # default
+    return {"tier": tier, "companies": limits.get("companies", 1), "connectors": limits.get("connectors", 0), "exports": bool(limits.get("exports", False)), "alerts": bool(limits.get("alerts", False))}
+
+
 async def get_org_context(user: dict, request: Request) -> RequestContext:
     """Resolve org context from X-Org-Id header or default to first membership."""
     header_org_id = request.headers.get("X-Org-Id")
