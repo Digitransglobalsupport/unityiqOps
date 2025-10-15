@@ -1519,15 +1519,6 @@ async def crm_dashboard(org_id: str, ctx: RequestContext = Depends(require_role(
     }
     return {"kpis": kpis, "opps": opps_doc.get("items", []), "masters": masters_doc.get("items", [])}
 
-        company_id = r.get('company_id') or 'UNKNOWN'
-        await db.bs.update_one(
-            {"org_id": org_id, "company_id": company_id, "period": period},
-            {"$set": {"org_id": org_id, "company_id": company_id, "period": period, "receivables": receivables}},
-            upsert=True
-        )
-        receivables_map[(company_id, period)] = receivables
-        ingested["bs"] += 1
-
     # Validate and ingest AR
     status_map = {"PAID":"PAID","AUTH":"AUTH","DUE":"DUE","VOID":"VOID"}
     for r in ar_rows:
