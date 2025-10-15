@@ -500,6 +500,18 @@ async def accept_invite(payload: VerifyEmailRequest, ctx_user: dict = Depends(ge
     try:
         data = decode_jwt(payload.token)
     except jwt.ExpiredSignatureError:
+
+# Token consumption redirects for reset and invite accept (public GET)
+@api.get("/reset/consume")
+async def reset_consume(token: str):
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"/reset-password?token={token}", status_code=302)
+
+@api.get("/invites/accept")
+async def invite_accept_redirect(token: str):
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"/accept-invite?token={token}", status_code=302)
+
         raise HTTPException(status_code=400, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=400, detail="Invalid token")
