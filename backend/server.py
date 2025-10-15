@@ -1088,6 +1088,43 @@ async def opp_status_update(opp_id: str, body: OppStatusPayload, ctx: RequestCon
                 "created_at": datetime.now(timezone.utc)
             })
 
+
+# --- Alerts (quick win) ---
+class AlertTestPayload(BaseModel):
+    org_id: str
+    text: Optional[str] = None
+
+@api.post("/alerts/test")
+async def alerts_test(body: AlertTestPayload, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    if ctx.org_id != body.org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    # Fetch org settings for Slack webhook
+    settings = await db.org_settings.find_one({"org_id": body.org_id}) or {}
+    text = body.text or ":link: New shared account found: Acme PLC (CO1, CO2). EV ~ £12,000. NBA: Intro Co1 → Co2."
+    delivered = []
+    # Slack webhook
+    webhook = settings.get("slack_webhook_url")
+    if webhook:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                await client.post(webhook, json={"text": text})
+            delivered.append("slack")
+        except Exception as e:
+            delivered.append(f"slack_error:{e}")
+    else:
+        delivered.append("slack_missing")
+    # Email fallback to OWNER via dev store (mock)
+    owner_membership = await db.memberships.find_one({"org_id": body.org_id, "role": "OWNER"})
+    owner = None
+    if owner_membership and owner_membership.get("user_id"):
+        owner = await db.users.find_one({"user_id": owner_membership.get("user_id")}, {"_id": 0})
+    if owner and owner.get("email"):
+        await send_dev_email(owner.get("email"), "Alert", text, action="alert")
+        delivered.append("email_dev")
+    await audit_log_entry(body.org_id, ctx.user_id, "alert_test", "alert", {"delivered": delivered})
+    return {"ok": True, "delivered": delivered}
+
     # Persist
     await db.cross_sell_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": opps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
     await audit_log_entry(org_id, ctx.user_id, "crm_cross_sell", "crm", {"opps": len(opps)})
