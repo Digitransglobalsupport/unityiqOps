@@ -18,6 +18,37 @@ function SynergyGauge({ score, weights, drivers }) {
 function KpiCards({ kpis }) {
   const items = [
     { key: "revenue", label: "Revenue" },
+function SuccessBanner(){
+  const { currentOrgId } = useOrg();
+  const [plan, setPlan] = useState(null);
+  const [dismissed, setDismissed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  useEffect(()=>{(async()=>{ try{ const { data } = await api.get(`/plans?org_id=${currentOrgId}`); setPlan(data.plan||null);}catch{}})()},[currentOrgId]);
+  const generate = async ()=>{
+    setLoading(true);
+    try {
+      const d = new Date();
+      const to = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 0)).toISOString().slice(0,10);
+      const from = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth()-3, 1)).toISOString().slice(0,10);
+      const resp = await api.post('/snapshot/generate', { org_id: currentOrgId, from, to }, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([resp.data]));
+      const a = document.createElement('a'); a.href = url; a.download = 'synergy_snapshot.pdf'; a.click();
+      setDismissed(true);
+    } catch(e){ /* toast could be added */ } finally { setLoading(false); }
+  };
+  if (dismissed) return null;
+  if (!plan || plan?.tier !== 'LITE') return null;
+  return (
+    <div className="border rounded bg-green-50 p-3" data-testid="snapshot-success-banner">
+      <div className="text-sm">🎉 Snapshot unlocked.<br/>Connect/refresh data and generate your 3-day report now.</div>
+      <div className="mt-2 flex gap-2">
+        <button data-testid="generate-snapshot" onClick={generate} className="px-3 py-1 rounded bg-green-600 text-white" disabled={loading}>{loading? 'Generating...':'Generate Snapshot'}</button>
+        <button data-testid="snapshot-skip" onClick={()=>setDismissed(true)} className="px-3 py-1 rounded border">Skip for now</button>
+      </div>
+    </div>
+  );
+}
+
     { key: "gm_pct", label: "GM%" },
     { key: "opex", label: "OPEX" },
     { key: "ebitda", label: "EBITDA" },
