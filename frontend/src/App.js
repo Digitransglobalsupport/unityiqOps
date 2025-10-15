@@ -20,6 +20,7 @@ import CsvIngest from "@/pages/CsvIngest";
 import CrmIngest from "@/pages/CrmIngest";
 import CustomersDashboard from "@/pages/CustomersDashboard";
 import VendorsDashboard from "@/pages/VendorsDashboard";
+import SpendIngest from "@/pages/SpendIngest";
 
 function ProtectedRoute({ children, requireVerified=false, minRole=null }) {
   const { isAuthenticated, loading, user } = useAuth();
@@ -81,6 +82,12 @@ function AppRoutes() {
       <Route path="/ingest/crm" element={
         <ProtectedRoute requireVerified={true} minRole="ANALYST">
           <CrmIngest />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/ingest/spend" element={
+        <ProtectedRoute requireVerified={true} minRole="ANALYST">
+          <SpendIngest />
         </ProtectedRoute>
       } />
 
