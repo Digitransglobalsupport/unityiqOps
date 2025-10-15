@@ -204,6 +204,7 @@ export default function FinanceDashboard() {
       {error && <div className="text-red-600 text-sm" role="alert" aria-live="polite">{error}</div>}
       {data && (
         <div className="space-y-4">
+          <SuccessBanner />
           <CustomerLensCard lens={data.customer_lens} />
           <SynergyGauge score={data.score?.s_fin} weights={data.score?.weights} drivers={data.score?.drivers} />
           <TrendsCharts />
