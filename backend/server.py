@@ -1399,6 +1399,15 @@ async def spend_refresh(body: Dict[str, Any], ctx: RequestContext = Depends(requ
             "vendors": [v.get("vendor_id") for v in vendor_items if v.get("annual_spend",0) < 300],
             "companies": list({c for v in vendor_items if v.get("annual_spend",0) < 300 for c in v.get("companies", [])}),
 
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        })
+
+    await db.savings_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": opps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "spend_refresh", "spend", {"opps": len(opps)})
+    # return after computing
+    return {"ok": True, "opps": len(opps)}
+
 # --- Billing: Stripe Lite Checkout ---
 import stripe
 
