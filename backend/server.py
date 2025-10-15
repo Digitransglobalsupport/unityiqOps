@@ -674,7 +674,7 @@ async def dashboard_finance(org_id: str, ctx: RequestContext = Depends(require_r
         },
         "kpis": {"revenue": 1250000, "gm_pct": 41.2, "opex": 520000, "ebitda": 230000, "dso_days": 47},
         "companies": demo_companies,
-        "data_health": {"stale_days": 0, "missing_fields": [], "warnings": []}
+        "data_health": {"stale_days": 0, "missing_fields": [], "warnings": (health or {}).get("warnings", [])}
     }
 
 @api.get("/connections/status")
