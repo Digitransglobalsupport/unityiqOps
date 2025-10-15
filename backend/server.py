@@ -1292,7 +1292,7 @@ async def spend_refresh(body: Dict[str, Any], ctx: RequestContext = Depends(requ
         for n in names:
             alias_map[n.lower()] = vid
     def normalize_vendor(name: str) -> str:
-        return (name or "").lower().replace(" ltd","").replace(" limited","").replace(" inc",""").replace(" llc",""").strip()
+        return (name or "").lower().replace(" ltd","").replace(" limited","").replace(" inc","").replace(" llc","").strip()
 
     # Assign canonical_vendor_id
     for ln in lines:
