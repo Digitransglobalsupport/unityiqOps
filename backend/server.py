@@ -656,17 +656,22 @@ async def dashboard_finance(org_id: str, ctx: RequestContext = Depends(require_r
         raise HTTPException(status_code=400, detail="Org mismatch")
     score = await db.synergy_scores.find_one({"org_id": org_id}, {"_id": 0})
     companies = await db.companies.find({"org_id": org_id, "is_active": True}, {"_id": 0}).to_list(50)
-    # Fixture-like shape for MVP demo
+    # Add percentile banding for demo
+    demo_companies = companies or [
+        {"company_id": "CO1", "name": "Alpha Ltd", "currency": "GBP", "kpis": {"revenue": 650000, "gm_pct": 44.0, "opex": 240000, "ebitda": 190000, "dso_days": 42}, "score": {"s_fin": 78}, "percentile": 82},
+        {"company_id": "CO2", "name": "Beta BV", "currency": "EUR", "kpis": {"revenue": 600000, "gm_pct": 38.5, "opex": 280000, "ebitda": 40000, "dso_days": 53}, "score": {"s_fin": 65}, "percentile": 55}
+    ]
     return {
         "org_id": org_id,
         "period": {"from": "2025-07-01", "to": "2025-09-30"},
         "last_sync_at": datetime.now(timezone.utc).isoformat(),
-        "score": {"s_fin": (score or {}).get("s_fin", 72), "weights": {"gm": 0.4, "opex": 0.4, "dso": 0.2}},
+        "score": {
+            "s_fin": (score or {}).get("s_fin", 72),
+            "weights": {"gm": 0.4, "opex": 0.4, "dso": 0.2},
+            "drivers": {"gm_delta_pct": 2.7, "opex_delta_pct": -1.4, "dso_delta_days": -6, "notes": ["GM improving vs prior quarter","DSO trending down 6 days QoQ"]}
+        },
         "kpis": {"revenue": 1250000, "gm_pct": 41.2, "opex": 520000, "ebitda": 230000, "dso_days": 47},
-        "companies": companies or [
-            {"company_id": "CO1", "name": "Alpha Ltd", "currency": "GBP", "kpis": {"revenue": 650000, "gm_pct": 44.0, "opex": 240000, "ebitda": 190000, "dso_days": 42}, "score": {"s_fin": 78}},
-            {"company_id": "CO2", "name": "Beta BV", "currency": "EUR", "kpis": {"revenue": 600000, "gm_pct": 38.5, "opex": 280000, "ebitda": 40000, "dso_days": 53}, "score": {"s_fin": 65}}
-        ],
+        "companies": demo_companies,
         "data_health": {"stale_days": 0, "missing_fields": [], "warnings": []}
     }
 
