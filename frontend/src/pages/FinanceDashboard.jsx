@@ -4,7 +4,7 @@ import { useOrg } from "@/context/OrgContext";
 import TrendsCharts from "@/components/TrendsCharts";
 
 function SynergyGauge({ score, weights, drivers }) {
-  const pct = Math.max(0, Math.min(100, Number(score||0)));
+  const pct = Math.max(0, Math.min(100, Number(score || 0)));
   const tooltip = `Weights: gm ${weights?.gm ?? 0}, opex ${weights?.opex ?? 0}, dso ${weights?.dso ?? 0}\nDrivers: gmΔ ${drivers?.gm_delta_pct ?? '-'}pp, opexΔ ${drivers?.opex_delta_pct ?? '-'}pp, dsoΔ ${drivers?.dso_delta_days ?? '-'} days`;
   return (
     <div data-testid="synergy-gauge" className="p-4 border rounded bg-white" title={tooltip}>
@@ -15,40 +15,85 @@ function SynergyGauge({ score, weights, drivers }) {
   );
 }
 
-function KpiCards({ kpis }) {
-  const items = [
-    { key: "revenue", label: "Revenue" },
-function SuccessBanner(){
+function SuccessBanner() {
   const { currentOrgId } = useOrg();
   const [plan, setPlan] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading] = useState(false);
-  useEffect(()=>{(async()=>{ try{ const { data } = await api.get(`/plans?org_id=${currentOrgId}`); setPlan(data.plan||null);}catch{}})()},[currentOrgId]);
-  const generate = async ()=>{
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get(`/plans?org_id=${currentOrgId}`);
+        setPlan(data.plan || null);
+      } catch {}
+    })();
+  }, [currentOrgId]);
+  const generate = async () => {
     setLoading(true);
     try {
       const d = new Date();
-      const to = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 0)).toISOString().slice(0,10);
-      const from = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth()-3, 1)).toISOString().slice(0,10);
-      const resp = await api.post('/snapshot/generate', { org_id: currentOrgId, from, to }, { responseType: 'blob' });
+      const to = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 0)).toISOString().slice(0, 10);
+      const from = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 3, 1)).toISOString().slice(0, 10);
+      const resp = await api.post("/snapshot/generate", { org_id: currentOrgId, from, to }, { responseType: "blob" });
       const url = window.URL.createObjectURL(new Blob([resp.data]));
-      const a = document.createElement('a'); a.href = url; a.download = 'synergy_snapshot.pdf'; a.click();
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "synergy_snapshot.pdf";
+      a.click();
       setDismissed(true);
-    } catch(e){ /* toast could be added */ } finally { setLoading(false); }
+    } catch (e) {
+      // optional toast
+    } finally {
+      setLoading(false);
+    }
   };
   if (dismissed) return null;
-  if (!plan || plan?.tier !== 'LITE') return null;
+  if (!plan || plan?.tier !== "LITE") return null;
   return (
     <div className="border rounded bg-green-50 p-3" data-testid="snapshot-success-banner">
-      <div className="text-sm">🎉 Snapshot unlocked.<br/>Connect/refresh data and generate your 3-day report now.</div>
+      <div className="text-sm">🎉 Snapshot unlocked.<br />Connect/refresh data and generate your 3-day report now.</div>
       <div className="mt-2 flex gap-2">
-        <button data-testid="generate-snapshot" onClick={generate} className="px-3 py-1 rounded bg-green-600 text-white" disabled={loading}>{loading? 'Generating...':'Generate Snapshot'}</button>
-        <button data-testid="snapshot-skip" onClick={()=>setDismissed(true)} className="px-3 py-1 rounded border">Skip for now</button>
+        <button data-testid="generate-snapshot" onClick={generate} className="px-3 py-1 rounded bg-green-600 text-white" disabled={loading}>
+          {loading ? "Generating..." : "Generate Snapshot"}
+        </button>
+        <button data-testid="snapshot-skip" onClick={() => setDismissed(true)} className="px-3 py-1 rounded border">
+          Skip for now
+        </button>
       </div>
     </div>
   );
 }
 
+function UpgradeCta() {
+  const { currentOrgId } = useOrg();
+  const [plan, setPlan] = useState(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get(`/plans?org_id=${currentOrgId}`);
+        setPlan(data.plan || null);
+      } catch {}
+    })();
+  }, [currentOrgId]);
+  const upgrade = async () => {
+    try {
+      const { data } = await api.post("/billing/checkout", { org_id: currentOrgId, plan: "LITE" });
+      window.location.href = data.url;
+    } catch (e) {
+      alert(e?.response?.data?.detail || "Checkout failed");
+    }
+  };
+  if (!plan || plan?.tier === "LITE" || plan?.tier === "PRO") return null;
+  return (
+    <button data-testid="upgrade-snapshot" className="px-3 py-1 rounded bg-amber-500 text-white" onClick={upgrade}>
+      Upgrade to Snapshot (£997)
+    </button>
+  );
+}
+
+function KpiCards({ kpis }) {
+  const items = [
+    { key: "revenue", label: "Revenue" },
     { key: "gm_pct", label: "GM%" },
     { key: "opex", label: "OPEX" },
     { key: "ebitda", label: "EBITDA" },
@@ -56,34 +101,31 @@ function SuccessBanner(){
   ];
   return (
     <div data-testid="kpi-cards" className="grid grid-cols-2 md:grid-cols-5 gap-3">
-      {items.map((it)=>(
+      {items.map((it) => (
         <div key={it.key} className="border rounded bg-white p-3">
           <div className="text-xs text-gray-500">{it.label}</div>
-          <div className="text-lg font-semibold">{kpis?.[it.key] ?? '-'}</div>
+          <div className="text-lg font-semibold">{kpis?.[it.key] ?? "-"}</div>
         </div>
       ))}
     </div>
   );
-function UpgradeCta(){
-  const { currentOrgId } = useOrg();
-  const [plan, setPlan] = useState(null);
-  useEffect(()=>{(async()=>{ try{ const { data } = await api.get(`/plans?org_id=${currentOrgId}`); setPlan(data.plan||null);}catch{}})()},[currentOrgId]);
-  const upgrade = async () => {
-    try { const { data } = await api.post('/billing/checkout', { org_id: currentOrgId, plan: 'LITE' }); window.location.href = data.url; } catch(e){ alert(e?.response?.data?.detail || 'Checkout failed'); }
-  };
-  if (!plan || plan?.tier === 'LITE' || plan?.tier === 'PRO') return null;
-  return <button data-testid="upgrade-snapshot" className="px-3 py-1 rounded bg-amber-500 text-white" onClick={upgrade}>Upgrade to Snapshot (£997)</button>;
-}
-
 }
 
 function CompaniesTable({ companies }) {
   const badge = (p) => {
-    if (p >= 80) return <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Top 20%</span>;
-    if (p >= 30) return <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">Middle 50%</span>;
-    return <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Bottom 30%</span>;
+    if (p >= 80)
+      return (
+        <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Top 20%</span>
+      );
+    if (p >= 30)
+      return (
+        <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">Middle 50%</span>
+      );
+    return (
+      <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Bottom 30%</span>
+    );
   };
-  const list = [...(companies||[])].sort((a,b)=> (b?.score?.s_fin||0) - (a?.score?.s_fin||0));
+  const list = [...(companies || [])].sort((a, b) => (b?.score?.s_fin || 0) - (a?.score?.s_fin || 0));
   return (
     <div data-testid="companies-table" className="border rounded bg-white">
       <table className="w-full text-sm">
@@ -101,17 +143,17 @@ function CompaniesTable({ companies }) {
           </tr>
         </thead>
         <tbody>
-          {list.map(c => (
+          {list.map((c) => (
             <tr key={c.company_id} className="border-t">
               <td className="p-2">{c.name}</td>
               <td className="p-2">{c.currency}</td>
-              <td className="p-2">{c.kpis?.revenue ?? '-'}</td>
-              <td className="p-2">{c.kpis?.gm_pct ?? '-'}</td>
-              <td className="p-2">{c.kpis?.opex ?? '-'}</td>
-              <td className="p-2">{c.kpis?.ebitda ?? '-'}</td>
-              <td className="p-2">{c.kpis?.dso_days ?? '-'}</td>
-              <td className="p-2">{c.score?.s_fin ?? '-'}</td>
-              <td className="p-2">{typeof c.percentile==='number' ? badge(c.percentile) : '-'}</td>
+              <td className="p-2">{c.kpis?.revenue ?? "-"}</td>
+              <td className="p-2">{c.kpis?.gm_pct ?? "-"}</td>
+              <td className="p-2">{c.kpis?.opex ?? "-"}</td>
+              <td className="p-2">{c.kpis?.ebitda ?? "-"}</td>
+              <td className="p-2">{c.kpis?.dso_days ?? "-"}</td>
+              <td className="p-2">{c.score?.s_fin ?? "-"}</td>
+              <td className="p-2">{typeof c.percentile === "number" ? badge(c.percentile) : "-"}</td>
             </tr>
           ))}
         </tbody>
@@ -124,10 +166,12 @@ function DataHealth({ health }) {
   return (
     <div data-testid="data-health" className="border rounded bg-white p-3">
       <div className="text-sm font-medium mb-2">Data Health</div>
-      <div className="text-xs text-gray-600">Stale days: {health?.stale_days ?? '-'}</div>
-      {(health?.warnings||[]).length>0 && (
+      <div className="text-xs text-gray-600">Stale days: {health?.stale_days ?? "-"}</div>
+      {(health?.warnings || []).length > 0 && (
         <ul className="list-disc ml-6 text-xs text-yellow-800 mt-2">
-          {health.warnings.map((w,i)=>(<li key={i}>{w}</li>))}
+          {health.warnings.map((w, i) => (
+            <li key={i}>{w}</li>
+          ))}
         </ul>
       )}
     </div>
@@ -140,26 +184,38 @@ function CustomerLensCard({ lens }) {
     <div className="border rounded bg-white p-3" data-testid="customer-lens">
       <div className="text-sm font-medium mb-2">Customer Lens</div>
       <div className="flex gap-6 text-sm">
-        <div>Shared accounts: <span className="font-semibold">{lens.shared_accounts}</span></div>
-        <div>Cross-sell: <span className="font-semibold">{lens.cross_sell_count}</span></div>
-        <div>EV: <span className="font-semibold">£{lens.cross_sell_value}</span></div>
+        <div>
+          Shared accounts: <span className="font-semibold">{lens.shared_accounts}</span>
+        </div>
+        <div>
+          Cross-sell: <span className="font-semibold">{lens.cross_sell_count}</span>
+        </div>
+        <div>
+          EV: <span className="font-semibold">£{lens.cross_sell_value}</span>
+        </div>
       </div>
       <div className="mt-3">
         <div className="text-xs text-gray-500 mb-1">Top opportunities</div>
         <ul className="space-y-1">
-          {(lens.recent_opps||[]).map((o,i)=> (
+          {(lens.recent_opps || []).map((o, i) => (
             <li key={i} className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{o.name || o.master_id}</span>
                 <div className="flex gap-1">
-                  {(o.companies||[]).map((c,ci)=>(<span key={ci} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{c}</span>))}
+                  {(o.companies || []).map((c, ci) => (
+                    <span key={ci} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                      {c}
+                    </span>
+                  ))}
                 </div>
               </div>
               <div className="text-xs">EV £{o.expected_value} • {o.nba}</div>
             </li>
           ))}
         </ul>
-        <a href="/dashboard/customers" className="inline-block mt-2 text-sm underline" data-testid="view-all-customers">View all customers</a>
+        <a href="/dashboard/customers" className="inline-block mt-2 text-sm underline" data-testid="view-all-customers">
+          View all customers
+        </a>
       </div>
     </div>
   );
@@ -172,18 +228,23 @@ export default function FinanceDashboard() {
   const [error, setError] = useState("");
 
   const fetchData = async () => {
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
     try {
       const { data } = await api.get(`/dashboard/finance?org_id=${currentOrgId}`);
       setData(data);
     } catch (e) {
       setError(e?.response?.data?.detail || "Failed to load dashboard");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(()=>{ if (currentOrgId) fetchData(); }, [currentOrgId]);
+  useEffect(() => {
+    if (currentOrgId) fetchData();
+  }, [currentOrgId]);
 
-  const canRefresh = ["ANALYST","ADMIN","OWNER"].includes(role || "");
+  const canRefresh = ["ANALYST", "ADMIN", "OWNER"].includes(role || "");
   const refresh = async () => {
     try {
       await api.post("/ingest/finance/refresh", { org_id: currentOrgId });
@@ -197,11 +258,22 @@ export default function FinanceDashboard() {
         <div className="text-2xl font-semibold">Finance Dashboard</div>
         <div className="flex items-center gap-2">
           <UpgradeCta />
-          <button data-testid="refresh-button" disabled={!canRefresh} className={`px-3 py-1 rounded ${canRefresh? 'bg-black text-white':'bg-gray-300 text-gray-600'}`} onClick={refresh}>Refresh</button>
+          <button
+            data-testid="refresh-button"
+            disabled={!canRefresh}
+            className={`px-3 py-1 rounded ${canRefresh ? "bg-black text-white" : "bg-gray-300 text-gray-600"}`}
+            onClick={refresh}
+          >
+            Refresh
+          </button>
         </div>
       </div>
       {loading && <div>Loading...</div>}
-      {error && <div className="text-red-600 text-sm" role="alert" aria-live="polite">{error}</div>}
+      {error && (
+        <div className="text-red-600 text-sm" role="alert" aria-live="polite">
+          {error}
+        </div>
+      )}
       {data && (
         <div className="space-y-4">
           <SuccessBanner />
@@ -224,20 +296,39 @@ function ExportSnapshot({ orgId }) {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const exportPdf = async () => {
-    setLoading(true); setMsg("");
+    setLoading(true);
+    setMsg("");
     try {
-      const { data } = await api.post("/export/snapshot", { org_id: orgId, period_from: "2025-07-01", period_to: "2025-09-30" }, { responseType: 'blob' });
+      const { data } = await api.post(
+        "/export/snapshot",
+        { org_id: orgId, period_from: "2025-07-01", period_to: "2025-09-30" },
+        { responseType: "blob" }
+      );
       const url = window.URL.createObjectURL(new Blob([data]));
-      const link = document.createElement('a');
-      link.href = url; link.setAttribute('download', 'synergy_snapshot.pdf');
-      document.body.appendChild(link); link.click(); link.remove();
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "synergy_snapshot.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
       setMsg("Download started");
-    } catch (e) { setMsg(e?.response?.data?.detail || "Export failed"); }
-    finally { setLoading(false); }
+    } catch (e) {
+      setMsg(e?.response?.data?.detail || "Export failed");
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <div className="flex items-center gap-2">
-      <button data-testid="export-snapshot" className="px-3 py-1 rounded bg-black text-white" onClick={exportPdf} disabled={loading} aria-busy={loading}>Download Synergy Snapshot (PDF)</button>
+      <button
+        data-testid="export-snapshot"
+        className="px-3 py-1 rounded bg-black text-white"
+        onClick={exportPdf}
+        disabled={loading}
+        aria-busy={loading}
+      >
+        Download Synergy Snapshot (PDF)
+      </button>
       {msg && <div className="text-sm">{msg}</div>}
     </div>
   );
