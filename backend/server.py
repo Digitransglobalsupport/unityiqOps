@@ -1707,16 +1707,63 @@ async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(re
     org_id = body.get("org_id")
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
+    # Feature gate: exports must be enabled
+    plan = await db.plans.find_one({"org_id": org_id}) or {}
+    if not plan or not (plan.get("limits", {}).get("exports") or plan.get("tier") in ("LITE","PRO")):
+        raise HTTPException(status_code=403, detail="Exports disabled for plan")
+
+    # Pull data for sections
+    finance = await dashboard_finance(org_id, ctx)
+    vendors_open = await savings_opps_list(org_id, "open", 10, ctx)
+    cross_sell = await opps_cross_sell(org_id, "open", 5, ctx)
+
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, 800, "Synergy Snapshot")
+    c.setFont("Helvetica-Bold", 16); c.drawString(50, 800, "Synergy Snapshot")
     c.setFont("Helvetica", 10)
     c.drawString(50, 780, f"Org: {org_id}")
-    c.drawString(50, 768, f"Period: {body.get('period_from','-')} to {body.get('period_to','-')}")
-    c.drawString(50, 750, "This is a mock PDF for demo purposes. Charts and tables will render here.")
-    c.showPage()
-    c.save()
+    c.drawString(50, 768, f"Period: {body.get('from','-')} to {body.get('to','-')}")
+    c.drawString(50, 756, f"Generated: {datetime.now(timezone.utc).isoformat()}")
+
+    # Executive Summary
+    c.setFont("Helvetica-Bold", 12); c.drawString(50, 730, "Executive Summary")
+    c.setFont("Helvetica", 10)
+    c.drawString(50, 715, f"Synergy Score (Finance): {finance['score']['s_fin']}")
+    c.drawString(50, 703, f"Revenue: £{finance['kpis']['revenue']}  GM%: {finance['kpis']['gm_pct']}  EBITDA: £{finance['kpis']['ebitda']}")
+    lens = finance.get('customer_lens')
+    if lens:
+      c.drawString(50, 691, f"Customer Lens: Shared {lens['shared_accounts']}, Cross-sell {lens['cross_sell_count']} (£{lens['cross_sell_value']})")
+
+    # Vendor KPIs
+    c.setFont("Helvetica-Bold", 12); c.drawString(50, 670, "Vendors")
+    c.setFont("Helvetica", 10)
+    c.drawString(50, 655, f"Open savings opportunities: {vendors_open['summary']['count']}  Est. Savings: £{vendors_open['summary']['est_saving']}")
+
+    # Top Cross-Sells
+    c.setFont("Helvetica-Bold", 12); c.drawString(50, 635, "Top Cross-Sell Opportunities")
+    c.setFont("Helvetica", 10)
+    y = 620
+    for o in (cross_sell.get('items') or [])[:5]:
+        c.drawString(50, y, f"{o.get('name') or o.get('master_id')} • £{o.get('expected_value')} • {', '.join(o.get('companies', []))}")
+        y -= 12
+        if y < 100: c.showPage(); y = 780
+
+    # Top Vendor Savings Table
+    c.setFont("Helvetica-Bold", 12); c.drawString(50, y-10, "Top Vendor Savings")
+    y -= 25; c.setFont("Helvetica-Bold", 10)
+    c.drawString(50, y, "Vendors"); c.drawString(250, y, "Companies"); c.drawString(400, y, "Est £/yr");
+    c.setFont("Helvetica", 10); y -= 14
+    for o in (vendors_open.get('items') or [])[:10]:
+        c.drawString(50, y, ", ".join(o.get('vendors', []))[:30])
+        c.drawString(250, y, ", ".join(o.get('companies', []))[:20])
+        c.drawString(400, y, str(o.get('est_saving')))
+        y -= 12
+        if y < 100: c.showPage(); y = 780
+
+    # Footer
+    c.setFont("Helvetica", 8)
+    c.drawString(50, 50, "Estimates use conservative defaults: volume 8%, SaaS 15%, tail 100%.")
+    c.showPage(); c.save()
     buf.seek(0)
     return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=synergy_snapshot.pdf"})
 
