@@ -1,12 +1,141 @@
 {
   "summary": {
-    "total_tests": 0,
-    "passed_tests": 0,
-    "success_rate": 0
+    "total_tests": 16,
+    "passed_tests": 3,
+    "success_rate": 18.75
   },
-  "detailed_results": [],
+  "detailed_results": [
+    {
+      "test": "RBAC: Anonymous Denied",
+      "success": true,
+      "details": "Anonymous correctly denied access",
+      "timestamp": "2025-10-15T22:01:30.922180"
+    },
+    {
+      "test": "RBAC: VIEWER Denied",
+      "success": true,
+      "details": "VIEWER correctly denied spend ingest access",
+      "timestamp": "2025-10-15T22:01:30.961196"
+    },
+    {
+      "test": "RBAC: ANALYST Allowed",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.043643"
+    },
+    {
+      "test": "RBAC: ADMIN Allowed",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.080798"
+    },
+    {
+      "test": "Tenancy: Org1 Data Ingest",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.124929"
+    },
+    {
+      "test": "CSV Validation: Valid Headers",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.182334"
+    },
+    {
+      "test": "CSV Validation: Invalid Date Rejection",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.225568"
+    },
+    {
+      "test": "CSV Validation: Non-numeric Amount Rejection",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.264553"
+    },
+    {
+      "test": "CSV Validation: Missing GL Code Warning",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.304251"
+    },
+    {
+      "test": "Refresh: Data Ingest",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.342693"
+    },
+    {
+      "test": "Heuristics: Data Ingest",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.382848"
+    },
+    {
+      "test": "Opportunities: VIEWER List Access",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.461510"
+    },
+    {
+      "test": "Alerts: Test Delivery",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:31.501458"
+    },
+    {
+      "test": "Alerts: Audit Recording",
+      "success": false,
+      "details": "Failed to get audit logs: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:32.541373"
+    },
+    {
+      "test": "Alerts: VIEWER Denied",
+      "success": true,
+      "details": "VIEWER correctly denied alert access",
+      "timestamp": "2025-10-15T22:01:32.576022"
+    },
+    {
+      "test": "Performance: 10k Ingest",
+      "success": false,
+      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-15T22:01:32.625354"
+    }
+  ],
   "test_data": {
-    "users": {},
-    "orgs": {}
+    "users": {
+      "viewer_1760565652@example.com": {
+        "email": "viewer_1760565652@example.com",
+        "password": "ViewerPass123!",
+        "role": "VIEWER"
+      },
+      "analyst_1760565652@example.com": {
+        "email": "analyst_1760565652@example.com",
+        "password": "AnalystPass123!",
+        "role": "ANALYST"
+      },
+      "admin_1760565652@example.com": {
+        "email": "admin_1760565652@example.com",
+        "password": "AdminPass123!",
+        "role": "ADMIN"
+      },
+      "owner_1760565652@example.com": {
+        "email": "owner_1760565652@example.com",
+        "password": "OwnerPass123!",
+        "role": "OWNER"
+      }
+    },
+    "orgs": {
+      "TestOrg1": {
+        "org_id": "8de35461-74cb-4a71-b489-e7def00da0f1",
+        "name": "TestOrg1",
+        "owner": "owner_1760565652@example.com"
+      },
+      "TestOrg2": {
+        "org_id": "4ee6a311-495f-4301-8d70-a2369904d875",
+        "name": "TestOrg2",
+        "owner": "owner_1760565652@example.com"
+      }
+    }
   }
 }
