@@ -1168,6 +1168,9 @@ class AlertTestPayload(BaseModel):
 async def alerts_test(body: AlertTestPayload, ctx: RequestContext = Depends(require_role("ADMIN"))):
     if ctx.org_id != body.org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
+    limits = await get_plan_limits(body.org_id)
+    if not limits.get("alerts"):
+        raise HTTPException(status_code=403, detail={"code":"PLAN_NOT_ALLOWED"})
     # Fetch org settings for Slack webhook
     settings = await db.org_settings.find_one({"org_id": body.org_id}) or {}
     text = body.text or ":link: New shared account found: Acme PLC (CO1, CO2). EV ~ £12,000. NBA: Intro Co1 → Co2."
