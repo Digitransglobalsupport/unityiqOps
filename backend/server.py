@@ -517,11 +517,19 @@ async def xero_oauth_start(body: Dict[str, Any], ctx: RequestContext = Depends(r
 @api.get("/mock/xero/consent")
 async def mock_xero_consent(state: str, ctx: RequestContext = Depends(require_role("ADMIN"))):
     from fastapi.responses import HTMLResponse
+    st = await db.oauth_states.find_one({"state": state})
+    if not st:
+        return HTMLResponse("Invalid or expired state", status_code=400)
     html = f"""
     <html><body style='font-family: sans-serif;'>
     <h3>Mock Xero Consent</h3>
     <p>State: {state}</p>
-    <a href='/api/connections/xero/oauth/callback?code=MOCK_CODE&state={state}'>Approve</a>
+    <form method='post' action='/api/connections/xero/oauth/callback' style='margin-top:16px;'>
+      <input type='hidden' name='code' value='MOCK_CODE'/>
+      <input type='hidden' name='state' value='{state}'/>
+      <input type='hidden' name='org_id' value='{st.get('org_id')}'/>
+      <button type='submit'>Approve</button>
+    </form>
     </body></html>
     """
     return HTMLResponse(content=html)
