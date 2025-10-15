@@ -1506,18 +1506,6 @@ async def vendor_alias_add(vendor_id: str, payload: VendorAliasPayload, ctx: Req
     await audit_log_entry(payload.org_id, ctx.user_id, "vendor_alias_add", "vendor", {"vendor_id": vendor_id})
     return {"ok": True}
 
-        owner = await db.users.find_one({"user_id": owner_membership.get("user_id")}, {"_id": 0})
-    if owner and owner.get("email"):
-        await send_dev_email(owner.get("email"), "Alert", text, action="alert")
-        delivered.append("email_dev")
-    await audit_log_entry(body.org_id, ctx.user_id, "alert_test", "alert", {"delivered": delivered})
-    return {"ok": True, "delivered": delivered}
-
-    # Persist
-    await db.cross_sell_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": opps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
-    await audit_log_entry(org_id, ctx.user_id, "crm_cross_sell", "crm", {"opps": len(opps)})
-    return {"ok": True, "opps": len(opps)}
-
 @api.get("/crm/dashboard")
 async def crm_dashboard(org_id: str, ctx: RequestContext = Depends(require_role("VIEWER"))):
     if ctx.org_id != org_id:
