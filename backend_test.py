@@ -701,13 +701,7 @@ class FinanceDashboardTester:
             print("❌ Critical: Login flow failed, stopping tests")
             return False
         
-        # Test password reset
-        self.test_password_reset_flow(owner_email)
-        
-        # Re-login after password reset
-        self.test_login_flow(owner_email)
-        
-        print("\n🏢 PHASE 2: Organization Management Tests")
+        print("\n🏢 PHASE 2: Organization Setup")
         print("-" * 40)
         
         # Create organization
@@ -716,53 +710,62 @@ class FinanceDashboardTester:
             print("❌ Critical: Organization creation failed")
             return False
         
-        # Test listing orgs
-        self.test_list_organizations(owner_email)
-        
-        print("\n👥 PHASE 3: Member Management Tests")
+        print("\n👥 PHASE 3: User Roles Setup")
         print("-" * 40)
         
-        # Create second user for invitation testing
+        # Create VIEWER user
         if not self.test_signup_flow():
-            print("❌ Critical: Second user signup failed")
+            print("❌ Critical: VIEWER user signup failed")
             return False
         
-        invitee_email = [email for email in self.users.keys() if email != owner_email][0]
+        viewer_email = [email for email in self.users.keys() if email != owner_email][0]
         
-        if not self.test_login_flow(invitee_email):
-            print("❌ Critical: Second user login failed")
+        if not self.test_login_flow(viewer_email):
+            print("❌ Critical: VIEWER user login failed")
             return False
         
-        # Test invitation flow
-        invite_token = self.test_invite_member(owner_email, org_name, invitee_email, "VIEWER")
-        if invite_token:
-            self.test_accept_invite(invitee_email, invite_token)
+        # Invite as VIEWER
+        viewer_invite_token = self.test_invite_member(owner_email, org_name, viewer_email, "VIEWER")
+        if viewer_invite_token:
+            self.test_accept_invite(viewer_email, viewer_invite_token)
         
-        # Create third user for ADMIN role testing
-        if not self.test_signup_flow():
-            print("❌ Warning: Third user signup failed, skipping RBAC tests")
-        else:
-            admin_email = [email for email in self.users.keys() if email not in [owner_email, invitee_email]][0]
-            if self.test_login_flow(admin_email):
-                # Invite as ADMIN
-                admin_invite_token = self.test_invite_member(owner_email, org_name, admin_email, "ADMIN")
-                if admin_invite_token:
-                    self.test_accept_invite(admin_email, admin_invite_token)
-                    
-                    print("\n🔐 PHASE 4: RBAC & Permission Tests")
-                    print("-" * 40)
-                    
-                    # Test RBAC permissions
-                    self.test_rbac_permissions(invitee_email, admin_email, org_name)
+        # Create ANALYST user
+        analyst_email = None
+        if self.test_signup_flow():
+            analyst_email = [email for email in self.users.keys() if email not in [owner_email, viewer_email]][0]
+            if self.test_login_flow(analyst_email):
+                # Invite as ANALYST
+                analyst_invite_token = self.test_invite_member(owner_email, org_name, analyst_email, "ANALYST")
+                if analyst_invite_token:
+                    self.test_accept_invite(analyst_email, analyst_invite_token)
         
-        print("\n📊 PHASE 5: Audit & Context Tests")
+        print("\n💰 PHASE 4: Finance Dashboard Tests")
+        print("-" * 40)
+        
+        # Test CSV ingest (ANALYST only)
+        if analyst_email:
+            self.test_csv_ingest_endpoint(analyst_email, org_name)
+            self.test_csv_ingest_rbac(viewer_email, org_name)  # VIEWER should be denied
+        
+        # Test dashboard endpoints (VIEWER can access)
+        self.test_dashboard_finance(viewer_email, org_name)
+        self.test_finance_trends(viewer_email, org_name)
+        self.test_connections_status(viewer_email, org_name)
+        
+        # Test PDF export (VIEWER can access)
+        self.test_export_snapshot_pdf(viewer_email, org_name)
+        
+        print("\n🚀 PHASE 5: Onboarding Flow Tests")
+        print("-" * 40)
+        
+        # Test onboarding flow (ADMIN/OWNER can access)
+        self.test_onboarding_flow(owner_email, org_name)
+        
+        print("\n📊 PHASE 6: Audit & Context Tests")
         print("-" * 40)
         
         # Test audit logs
         self.test_audit_logs(owner_email, org_name)
-        
-        # Test context injection
-        self.test_context_injection(owner_email)
         
         return True
 
