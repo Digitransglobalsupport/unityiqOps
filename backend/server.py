@@ -569,6 +569,11 @@ async def xero_oauth_start(body: Dict[str, Any], ctx: RequestContext = Depends(r
     org_id = body.get("org_id")
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
+    # enforce connector limit
+    limits = await get_plan_limits(org_id)
+    connected = await db.connections.count_documents({"org_id": org_id})
+    if connected >= limits["connectors"]:
+        raise HTTPException(status_code=403, detail={"code":"LIMIT_EXCEEDED", "limit":"connectors", "allowed": limits["connectors"], "current": connected})
     state = str(uuid.uuid4())
     await db.oauth_states.insert_one({"state": state, "org_id": org_id, "ts": datetime.now(timezone.utc)})
     return {"auth_url": f"/api/mock/xero/consent?state={state}"}
