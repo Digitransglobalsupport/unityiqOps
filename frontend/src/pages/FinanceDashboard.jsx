@@ -92,6 +92,37 @@ function DataHealth({ health }) {
   );
 }
 
+function CustomerLensCard({ lens }) {
+  if (!lens) return null;
+  return (
+    <div className="border rounded bg-white p-3" data-testid="customer-lens">
+      <div className="text-sm font-medium mb-2">Customer Lens</div>
+      <div className="flex gap-6 text-sm">
+        <div>Shared accounts: <span className="font-semibold">{lens.shared_accounts}</span></div>
+        <div>Cross-sell: <span className="font-semibold">{lens.cross_sell_count}</span></div>
+        <div>EV: <span className="font-semibold">£{lens.cross_sell_value}</span></div>
+      </div>
+      <div className="mt-3">
+        <div className="text-xs text-gray-500 mb-1">Top opportunities</div>
+        <ul className="space-y-1">
+          {(lens.recent_opps||[]).map((o,i)=> (
+            <li key={i} className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{o.name || o.master_id}</span>
+                <div className="flex gap-1">
+                  {(o.companies||[]).map((c,ci)=>(<span key={ci} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{c}</span>))}
+                </div>
+              </div>
+              <div className="text-xs">EV £{o.expected_value} • {o.nba}</div>
+            </li>
+          ))}
+        </ul>
+        <a href="/dashboard/customers" className="inline-block mt-2 text-sm underline" data-testid="view-all-customers">View all customers</a>
+      </div>
+    </div>
+  );
+}
+
 export default function FinanceDashboard() {
   const { currentOrgId, role } = useOrg();
   const [data, setData] = useState(null);
@@ -130,6 +161,7 @@ export default function FinanceDashboard() {
       {error && <div className="text-red-600 text-sm" role="alert" aria-live="polite">{error}</div>}
       {data && (
         <div className="space-y-4">
+          <CustomerLensCard lens={data.customer_lens} />
           <SynergyGauge score={data.score?.s_fin} weights={data.score?.weights} drivers={data.score?.drivers} />
           <TrendsCharts />
           <KpiCards kpis={data.kpis} />
