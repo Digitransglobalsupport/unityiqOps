@@ -319,6 +319,7 @@ async def login(payload: LoginRequest, request: Request):
 # Convenience GET endpoint for verification via link
 @api.get("/auth/verify-email")
 async def verify_email_get(token: str):
+    from fastapi.responses import RedirectResponse
     try:
         data = decode_jwt(token)
     except jwt.ExpiredSignatureError:
@@ -334,7 +335,7 @@ async def verify_email_get(token: str):
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     await audit_log_entry(None, user_id, "verify_email", "user", {})
-    return {"message": "Email verified"}
+    return RedirectResponse(url="/login?verified=1", status_code=302)
 
     rate_limit(f"login:{request.client.host}", 30, 60)
     user = await db.users.find_one({"email": payload.email.lower()}, {"_id": 0})
