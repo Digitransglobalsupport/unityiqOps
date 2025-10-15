@@ -1118,6 +1118,373 @@ async def alerts_test(body: AlertTestPayload, ctx: RequestContext = Depends(requ
     owner_membership = await db.memberships.find_one({"org_id": body.org_id, "role": "OWNER"})
     owner = None
     if owner_membership and owner_membership.get("user_id"):
+
+# --- Day 3: Vendor Optimizer (Spend → Savings) ---
+from fastapi import UploadFile
+import csv as _csv
+
+CATEGORIES = {
+    "SaaS": ["LICENCE", "LICENSE", "SUBSCRIPTION", "AWS", "AZURE", "GCP", "GOOGLE CLOUD", "SALESFORCE", "HUBSPOT"],
+    "Vendors": ["SUPPLIER", "SERVICES"],
+}
+
+DISCOUNT_RATE_DEFAULT = 0.08
+
+@api.post("/ingest/spend/csv")
+async def ingest_spend_csv(org_id: str = Form(...), spend: UploadFile | None = File(None), saas: UploadFile | None = File(None), ctx: RequestContext = Depends(require_role("ANALYST"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    warnings: List[str] = []
+    ing = {"spend": 0, "saas": 0}
+
+    def read_rows(file: UploadFile | None):
+        if not file:
+            return []
+        content = file.file.read().decode("utf-8", errors="ignore")
+        reader = _csv.DictReader(content.splitlines())
+        rows = []
+        for row in reader:
+            rows.append({k.strip().lower(): (v or "").strip() for k, v in row.items()})
+        return rows
+
+    spend_rows = read_rows(spend)
+    saas_rows = read_rows(saas)
+
+    # Write spend_lines
+    to_insert = []
+    for r in spend_rows:
+        try:
+            amt = float(r.get("amount", 0) or 0)
+        except:
+            amt = 0
+        cat = None
+        txt = f"{r.get('vendor','')} {r.get('description','')} {r.get('gl_code','')}".upper()
+        for cat_name, kws in CATEGORIES.items():
+            if any(kw in txt for kw in kws):
+                cat = cat_name; break
+        if not cat and not r.get("gl_code"):
+            warnings.append("spend line missing gl_code – categorized via keywords")
+        to_insert.append({
+            "org_id": org_id,
+            "company_id": r.get("company_id"),
+            "date": r.get("date"),
+            "vendor_raw": r.get("vendor"),
+            "canonical_vendor_id": None,
+            "description": r.get("description"),
+            "amount": amt,
+            "currency": r.get("currency") or "GBP",
+            "gl_code": r.get("gl_code") or None,
+            "category": cat or ("SaaS" if "SUBSCRIPTION" in txt else None),
+            "iban": r.get("iban") or None,
+            "vat_no": r.get("vat_no") or None,
+        })
+    if to_insert:
+        await db.spend_lines.insert_many(to_insert)
+        ing["spend"] = len(to_insert)
+
+    # Write saas inventory
+    saas_ins = []
+    for r in saas_rows:
+        try:
+            seats = int(float(r.get("seat_count", 0) or 0))
+            price = float(r.get("price_per_seat", 0) or 0)
+        except:
+            seats = 0; price = 0.0
+        saas_ins.append({
+            "org_id": org_id,
+            "vendor": r.get("vendor"),
+            "product": r.get("product"),
+            "seat_count": seats,
+            "price_per_seat": price,
+            "term": r.get("term") or "monthly",
+            "company_id": r.get("company_id")
+        })
+    if saas_ins:
+        await db.saas_inventory.insert_many(saas_ins)
+        ing["saas"] = len(saas_ins)
+
+    await audit_log_entry(org_id, ctx.user_id, "spend_csv", "spend", {"ing": ing, "warnings": len(warnings)})
+    return {"ok": True, "ingested": ing, "warnings": warnings}
+
+@api.post("/ingest/spend/refresh")
+async def spend_refresh(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = body.get("org_id")
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    # Load spend lines in range
+    from_dt = body.get("from"); to_dt = body.get("to")
+    q = {"org_id": org_id}
+    if from_dt and to_dt:
+        q["date"] = {"$gte": from_dt, "$lte": to_dt}
+    lines = await db.spend_lines.find(q, {"_id": 0}).to_list(50000)
+
+    # Canonicalize vendors by alias and simple normalization
+    alias_docs = await db.vendor_master.find({"org_id": org_id}, {"_id": 0}).to_list(5000)
+    alias_map = {}
+    for v in alias_docs:
+        vid = v.get("vendor_id")
+        names = [v.get("canonical_name",""), *(v.get("aliases", {}).get("names", []))]
+        for n in names:
+            alias_map[n.lower()] = vid
+    def normalize_vendor(name: str) -> str:
+        return (name or "").lower().replace(" ltd","").replace(" limited","").replace(" inc",""").replace(" llc",""").strip()
+
+    # Assign canonical_vendor_id
+    for ln in lines:
+        raw = ln.get("vendor_raw") or ""
+        nid = alias_map.get(raw.lower()) or alias_map.get(normalize_vendor(raw))
+        ln["canonical_vendor_id"] = nid or f"VN-{normalize_vendor(raw)[:24]}"
+
+    # Aggregate spend per vendor and build vendor_master
+    total_spend_by_vendor: Dict[str, float] = {}
+    companies_by_vendor: Dict[str, set] = {}
+    category_by_vendor: Dict[str, str] = {}
+    for ln in lines:
+        vid = ln["canonical_vendor_id"]
+        total_spend_by_vendor[vid] = total_spend_by_vendor.get(vid, 0.0) + float(ln.get("amount", 0) or 0)
+        companies_by_vendor.setdefault(vid, set()).add(ln.get("company_id"))
+        if not category_by_vendor.get(vid) and ln.get("category"):
+            category_by_vendor[vid] = ln.get("category")
+
+    # Annualize based on range days (approx)
+    from datetime import date as _date
+    def days_between(a: str, b: str) -> int:
+        try:
+            y1,m1,d1 = [int(x) for x in a.split('-')]; y2,m2,d2 = [int(x) for x in b.split('-')]
+            return ( _date(y2,m2,d2) - _date(y1,m1,d1) ).days or 90
+        except:
+            return 90
+    days = days_between(from_dt or "2025-07-01", to_dt or "2025-09-30")
+    factor = 365.0 / max(1, days)
+
+    vendor_items = []
+    for vid, spend in total_spend_by_vendor.items():
+        annual = round(spend * factor)
+        # pick canonical name from any line
+        any_name = next((ln.get("vendor_raw") for ln in lines if ln["canonical_vendor_id"]==vid and ln.get("vendor_raw")), vid)
+        vendor_items.append({
+            "org_id": org_id,
+            "vendor_id": vid,
+            "canonical_name": any_name,
+            "aliases": {"names": [], "domains": [], "vat": []},
+            "companies": sorted([c for c in companies_by_vendor.get(vid, set()) if c]),
+            "category": category_by_vendor.get(vid) or "Vendors",
+            "annual_spend": annual
+        })
+
+    await db.vendor_master.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": vendor_items, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+
+    # Compute savings opportunities
+    discount_rate = DISCOUNT_RATE_DEFAULT
+    try:
+        org_set = await db.org_settings.find_one({"org_id": org_id}) or {}
+        dr = org_set.get("vendor_discount_rate")
+        if dr:
+            discount_rate = float(dr)
+    except:
+        pass
+    opps: List[Dict[str, Any]] = []
+    # Volume Discount
+    for v in vendor_items:
+        if len(v.get("companies", [])) >= 2:
+            est = round(v.get("annual_spend", 0) * discount_rate)
+            if est > 0:
+                opps.append({
+                    "opportunity_id": str(uuid.uuid4()),
+                    "type": "VolumeDiscount",
+                    "vendors": [v.get("vendor_id")],
+                    "companies": v.get("companies", []),
+                    "category": v.get("category"),
+                    "est_saving": est,
+                    "status": "open",
+                    "owner_user_id": None,
+                    "notes": [],
+                    "playbook_step": f"Consolidate under {v.get('companies', [''])[0]} master; negotiate {int(discount_rate*100)}% on combined",
+                    "evidence": {"annual_spend": v.get("annual_spend"), "calc": f"{v.get('annual_spend')} * {discount_rate}"},
+                    "created_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(timezone.utc)
+                })
+    # SaaS Consolidation
+    inv = await db.saas_inventory.find({"org_id": org_id}, {"_id": 0}).to_list(5000)
+    total_saas = sum((r.get("seat_count",0) or 0) * (r.get("price_per_seat",0) or 0) for r in inv)
+    if total_saas > 0:
+        est = max(round(total_saas * 0.15), 0)
+        if est > 0:
+            opps.append({
+                "opportunity_id": str(uuid.uuid4()),
+                "type": "Consolidation",
+                "vendors": list({(r.get('vendor') or '').strip() for r in inv if r.get('vendor')}),
+                "companies": list({(r.get('company_id') or '').strip() for r in inv if r.get('company_id')}),
+                "category": "SaaS",
+                "est_saving": est,
+                "status": "open",
+                "owner_user_id": None,
+                "notes": [],
+                "playbook_step": "Consolidate tools; negotiate 15%",
+                "evidence": {"total_saas_spend": total_saas, "calc": f"{total_saas} * 0.15"},
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            })
+    # Tail Cleanup
+    tail_total = sum(v.get("annual_spend",0) for v in vendor_items if v.get("annual_spend",0) < 300)
+    if tail_total > 0:
+        opps.append({
+            "opportunity_id": str(uuid.uuid4()),
+            "type": "TailCleanup",
+            "vendors": [v.get("vendor_id") for v in vendor_items if v.get("annual_spend",0) < 300],
+            "companies": list({c for v in vendor_items if v.get("annual_spend",0) < 300 for c in v.get("companies", [])}),
+            "category": "Vendors",
+            "est_saving": round(tail_total),
+            "status": "open",
+            "owner_user_id": None,
+            "notes": [],
+            "playbook_step": "Eliminate long tail vendors <£300/yr",
+            "evidence": {"tail_total": tail_total},
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        })
+
+    await db.savings_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": opps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "spend_refresh", "spend", {"opps": len(opps)})
+
+    # Alerts
+    try:
+        settings = await db.org_settings.find_one({"org_id": org_id}) or {}
+        webhook = settings.get("slack_webhook_url")
+        high_value = [o for o in opps if o.get("est_saving",0) >= 5000]
+        if high_value and webhook:
+            import httpx
+            txt = f":moneybag: Vendor savings found: {high_value[0].get('vendors', [''])[0]} across {', '.join(high_value[0].get('companies', []))}. Est £{high_value[0].get('est_saving')} /yr. Playbook: {high_value[0].get('playbook_step')}"
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                await client.post(webhook, json={"text": txt})
+            await audit_log_entry(org_id, ctx.user_id, "alert_vendor", "alert", {"count": len(high_value)})
+        elif high_value:
+            # email dev fallback to OWNER
+            owner_membership = await db.memberships.find_one({"org_id": org_id, "role": "OWNER"})
+            if owner_membership and owner_membership.get("user_id"):
+                owner = await db.users.find_one({"user_id": owner_membership.get("user_id")}, {"_id": 0})
+                if owner and owner.get("email"):
+                    await send_dev_email(owner.get("email"), "Vendor savings", "High value savings opportunities detected", action="alert")
+    except Exception:
+        pass
+
+    return {"ok": True, "opps": len(opps)}
+
+@api.get("/vendors/categories")
+async def vendors_categories(ctx: RequestContext = Depends(require_role("VIEWER"))):
+    return {"categories": list(CATEGORIES.keys()), "keywords": CATEGORIES}
+
+@api.get("/vendors/master")
+async def vendors_master(org_id: str, q: Optional[str] = None, category: Optional[str] = None, shared: str = "any", limit: int = 50, cursor: Optional[str] = None, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    doc = await db.vendor_master.find_one({"org_id": org_id}) or {}
+    items = doc.get("items", [])
+    def filt(v):
+        if category and v.get("category") != category:
+            return False
+        if q:
+            s = q.lower()
+            if s not in (v.get("canonical_name","" ) or "").lower():
+                return False
+        if shared != "any":
+            is_shared = len(v.get("companies", [])) >= 2
+            if (shared == "true" and not is_shared) or (shared == "false" and is_shared):
+                return False
+        return True
+    arr = [v for v in items if filt(v)]
+    page = int((int(cursor or "0")) or 0)
+    start = page*limit
+    end = start+limit
+    next_cursor = str(page+1) if end < len(arr) else None
+    summary = {"vendors": len(items), "shared_vendors": sum(1 for v in items if len(v.get("companies", []))>=2), "annual_spend": sum(v.get("annual_spend",0) for v in items)}
+    out = [{k: v.get(k) for k in ["vendor_id","canonical_name","companies","category","annual_spend"]} for v in arr[start:end]]
+    return {"summary": summary, "items": out, "cursor": next_cursor}
+
+@api.get("/opps/savings")
+async def savings_opps_list(org_id: str, status: str = "open", limit: int = 50, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    doc = await db.savings_opps.find_one({"org_id": org_id}) or {}
+    items = doc.get("items", [])
+    if status != "any":
+        items = [o for o in items if o.get("status","open") == status]
+    items = sorted(items, key=lambda o: o.get("updated_at",""), reverse=True)[:limit]
+    summary = {"count": len(items), "est_saving": sum(o.get("est_saving",0) for o in items)}
+    return {"summary": summary, "items": items}
+
+class SavingsStatusPayload(BaseModel):
+    status: str
+    note: Optional[str] = None
+
+@api.post("/opps/savings/{opp_id}/status")
+async def savings_status_update(opp_id: str, body: SavingsStatusPayload, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    org_id = ctx.org_id
+    doc = await db.savings_opps.find_one({"org_id": org_id}) or {}
+    updated = False
+    for o in doc.get("items", []):
+        if o.get("opportunity_id") == opp_id:
+            o["status"] = body.status
+            o["updated_at"] = datetime.now(timezone.utc)
+            notes = o.get("notes", [])
+            if body.note:
+                notes.append({"note": body.note, "ts": datetime.now(timezone.utc), "by": ctx.user_id})
+            o["notes"] = notes
+            updated = True
+            break
+    if not updated:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    await db.savings_opps.update_one({"org_id": org_id}, {"$set": {"items": doc.get("items", []), "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "savings_status", "opportunity", {"opp_id": opp_id, "status": body.status})
+    return {"ok": True}
+
+class SavingsAssignPayload(BaseModel):
+    owner_user_id: str
+
+@api.post("/opps/savings/{opp_id}/assign")
+async def savings_assign_update(opp_id: str, body: SavingsAssignPayload, ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = ctx.org_id
+    doc = await db.savings_opps.find_one({"org_id": org_id}) or {}
+    updated = False
+    for o in doc.get("items", []):
+        if o.get("opportunity_id") == opp_id:
+            o["owner_user_id"] = body.owner_user_id
+            o["updated_at"] = datetime.now(timezone.utc)
+            updated = True
+            break
+    if not updated:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    await db.savings_opps.update_one({"org_id": org_id}, {"$set": {"items": doc.get("items", []), "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "savings_assign", "opportunity", {"opp_id": opp_id, "owner": body.owner_user_id})
+    return {"ok": True}
+
+class VendorAliasPayload(BaseModel):
+    org_id: str
+    add_names: Optional[List[str]] = None
+    add_domains: Optional[List[str]] = None
+    add_vat: Optional[List[str]] = None
+
+@api.post("/vendors/{vendor_id}/alias")
+async def vendor_alias_add(vendor_id: str, payload: VendorAliasPayload, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    if ctx.org_id != payload.org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    doc = await db.vendor_master.find_one({"org_id": payload.org_id}) or {}
+    items = doc.get("items", [])
+    for v in items:
+        if v.get("vendor_id") == vendor_id:
+            aliases = v.get("aliases", {"names": [], "domains": [], "vat": []})
+            if payload.add_names:
+                aliases["names"] = list({*aliases.get("names", []), *payload.add_names})
+            if payload.add_domains:
+                aliases["domains"] = list({*aliases.get("domains", []), *payload.add_domains})
+            if payload.add_vat:
+                aliases["vat"] = list({*aliases.get("vat", []), *payload.add_vat})
+            v["aliases"] = aliases
+            break
+    await db.vendor_master.update_one({"org_id": payload.org_id}, {"$set": {"items": items, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(payload.org_id, ctx.user_id, "vendor_alias_add", "vendor", {"vendor_id": vendor_id})
+    return {"ok": True}
+
         owner = await db.users.find_one({"user_id": owner_membership.get("user_id")}, {"_id": 0})
     if owner and owner.get("email"):
         await send_dev_email(owner.get("email"), "Alert", text, action="alert")
