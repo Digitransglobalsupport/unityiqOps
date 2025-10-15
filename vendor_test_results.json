@@ -1,140 +1,260 @@
 {
   "summary": {
-    "total_tests": 16,
-    "passed_tests": 3,
-    "success_rate": 18.75
+    "total_tests": 36,
+    "passed_tests": 36,
+    "success_rate": 100.0
   },
   "detailed_results": [
     {
       "test": "RBAC: Anonymous Denied",
       "success": true,
       "details": "Anonymous correctly denied access",
-      "timestamp": "2025-10-15T22:01:30.922180"
+      "timestamp": "2025-10-15T22:12:54.488287"
     },
     {
       "test": "RBAC: VIEWER Denied",
       "success": true,
       "details": "VIEWER correctly denied spend ingest access",
-      "timestamp": "2025-10-15T22:01:30.961196"
+      "timestamp": "2025-10-15T22:12:54.566575"
     },
     {
       "test": "RBAC: ANALYST Allowed",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.043643"
+      "success": true,
+      "details": "ANALYST correctly allowed spend ingest access",
+      "timestamp": "2025-10-15T22:12:54.617844"
     },
     {
       "test": "RBAC: ADMIN Allowed",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.080798"
+      "success": true,
+      "details": "ADMIN correctly allowed spend refresh access",
+      "timestamp": "2025-10-15T22:12:54.678656"
     },
     {
       "test": "Tenancy: Org1 Data Ingest",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.124929"
+      "success": true,
+      "details": "Ingested: {'spend': 2, 'saas': 0}",
+      "timestamp": "2025-10-15T22:12:54.719256"
+    },
+    {
+      "test": "Tenancy: Org2 Data Ingest",
+      "success": true,
+      "details": "Ingested: {'spend': 2, 'saas': 0}",
+      "timestamp": "2025-10-15T22:12:54.758113"
+    },
+    {
+      "test": "Tenancy: TestOrg1 Refresh",
+      "success": true,
+      "details": "Opportunities: 0",
+      "timestamp": "2025-10-15T22:12:54.799082"
+    },
+    {
+      "test": "Tenancy: TestOrg2 Refresh",
+      "success": true,
+      "details": "Opportunities: 0",
+      "timestamp": "2025-10-15T22:12:54.840625"
+    },
+    {
+      "test": "Tenancy: Org1 Isolation",
+      "success": true,
+      "details": "Org1 sees correct vendors: ['TestVendor', 'Org1Vendor', 'SharedVendor']",
+      "timestamp": "2025-10-15T22:12:54.877870"
+    },
+    {
+      "test": "Tenancy: Org2 Isolation",
+      "success": true,
+      "details": "Org2 sees correct vendors: ['Org2Vendor', 'SharedVendor']",
+      "timestamp": "2025-10-15T22:12:54.916971"
     },
     {
       "test": "CSV Validation: Valid Headers",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.182334"
+      "success": true,
+      "details": "Ingested: {'spend': 2, 'saas': 0}, Warnings: 2",
+      "timestamp": "2025-10-15T22:12:54.955813"
     },
     {
       "test": "CSV Validation: Invalid Date Rejection",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.225568"
+      "success": true,
+      "details": "Date warnings: 2",
+      "timestamp": "2025-10-15T22:12:54.993719"
     },
     {
       "test": "CSV Validation: Non-numeric Amount Rejection",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.264553"
+      "success": true,
+      "details": "Amount warnings: 2",
+      "timestamp": "2025-10-15T22:12:55.036705"
     },
     {
       "test": "CSV Validation: Missing GL Code Warning",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.304251"
+      "success": true,
+      "details": "GL code warnings: 2",
+      "timestamp": "2025-10-15T22:12:55.072618"
     },
     {
       "test": "Refresh: Data Ingest",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.342693"
+      "success": true,
+      "details": "Ingested: {'spend': 6, 'saas': 0}",
+      "timestamp": "2025-10-15T22:12:55.118733"
     },
     {
-      "test": "Heuristics: Data Ingest",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.382848"
+      "test": "Refresh: Execution",
+      "success": true,
+      "details": "Refresh completed, opportunities: 2",
+      "timestamp": "2025-10-15T22:12:55.160630"
+    },
+    {
+      "test": "Refresh: Vendor Master Built",
+      "success": true,
+      "details": "Vendors: 9, Microsoft: 2, Google: 2, Shared: 1, Total spend: \u00a332791",
+      "timestamp": "2025-10-15T22:12:55.198818"
+    },
+    {
+      "test": "Refresh: Vendor Structure",
+      "success": true,
+      "details": "Vendor has all required fields",
+      "timestamp": "2025-10-15T22:12:55.198847"
+    },
+    {
+      "test": "Heuristics: SaaS Data Ingest",
+      "success": true,
+      "details": "SaaS ingested: {'spend': 0, 'saas': 2}",
+      "timestamp": "2025-10-15T22:12:55.332183"
+    },
+    {
+      "test": "Heuristics: VolumeDiscount",
+      "success": true,
+      "details": "Found 2 VolumeDiscount opportunities",
+      "timestamp": "2025-10-15T22:12:55.454951"
+    },
+    {
+      "test": "Heuristics: Consolidation",
+      "success": true,
+      "details": "Found 1 Consolidation opportunities",
+      "timestamp": "2025-10-15T22:12:55.454980"
+    },
+    {
+      "test": "Heuristics: TailCleanup",
+      "success": true,
+      "details": "Found 1 TailCleanup opportunities",
+      "timestamp": "2025-10-15T22:12:55.454985"
+    },
+    {
+      "test": "Heuristics: Opportunity Structure",
+      "success": true,
+      "details": "Opportunities have all required fields",
+      "timestamp": "2025-10-15T22:12:55.454991"
+    },
+    {
+      "test": "Heuristics: Total Opportunities",
+      "success": true,
+      "details": "Generated 4 opportunities worth \u00a30",
+      "timestamp": "2025-10-15T22:12:55.454996"
     },
     {
       "test": "Opportunities: VIEWER List Access",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.461510"
+      "success": true,
+      "details": "Found 4 opportunities",
+      "timestamp": "2025-10-15T22:12:55.492690"
+    },
+    {
+      "test": "Opportunities: ANALYST Assign",
+      "success": true,
+      "details": "ANALYST successfully assigned opportunity",
+      "timestamp": "2025-10-15T22:12:55.530475"
+    },
+    {
+      "test": "Opportunities: ADMIN Status Transition",
+      "success": true,
+      "details": "ADMIN successfully changed status to validate",
+      "timestamp": "2025-10-15T22:12:55.569566"
+    },
+    {
+      "test": "Opportunities: Idempotency",
+      "success": true,
+      "details": "Idempotent status update handled correctly",
+      "timestamp": "2025-10-15T22:12:55.608054"
+    },
+    {
+      "test": "Opportunities: VIEWER Assign Denied",
+      "success": true,
+      "details": "VIEWER correctly denied assign permission",
+      "timestamp": "2025-10-15T22:12:55.646329"
+    },
+    {
+      "test": "Opportunities: Audit Entries",
+      "success": true,
+      "details": "Found 3 opportunity audit entries",
+      "timestamp": "2025-10-15T22:12:55.684685"
     },
     {
       "test": "Alerts: Test Delivery",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:31.501458"
+      "success": true,
+      "details": "Alert delivered to: ['slack_missing', 'email']",
+      "timestamp": "2025-10-15T22:12:55.764184"
     },
     {
       "test": "Alerts: Audit Recording",
-      "success": false,
-      "details": "Failed to get audit logs: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:32.541373"
+      "success": true,
+      "details": "Found 1 alert audit entries",
+      "timestamp": "2025-10-15T22:12:56.804383"
     },
     {
       "test": "Alerts: VIEWER Denied",
       "success": true,
       "details": "VIEWER correctly denied alert access",
-      "timestamp": "2025-10-15T22:01:32.576022"
+      "timestamp": "2025-10-15T22:12:56.840030"
     },
     {
       "test": "Performance: 10k Ingest",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T22:01:32.625354"
+      "success": true,
+      "details": "Ingested 10000 lines in 0.17s",
+      "timestamp": "2025-10-15T22:12:57.020045"
+    },
+    {
+      "test": "Performance: 10k Refresh",
+      "success": true,
+      "details": "Refresh completed in 0.09s, generated 104 opportunities",
+      "timestamp": "2025-10-15T22:12:57.110849"
+    },
+    {
+      "test": "Performance: Under 2s Target",
+      "success": true,
+      "details": "Total time 0.26s meets target",
+      "timestamp": "2025-10-15T22:12:57.110890"
     }
   ],
   "test_data": {
     "users": {
-      "viewer_1760565652@example.com": {
-        "email": "viewer_1760565652@example.com",
+      "viewer_1760566360@example.com": {
+        "email": "viewer_1760566360@example.com",
         "password": "ViewerPass123!",
         "role": "VIEWER"
       },
-      "analyst_1760565652@example.com": {
-        "email": "analyst_1760565652@example.com",
+      "analyst_1760566360@example.com": {
+        "email": "analyst_1760566360@example.com",
         "password": "AnalystPass123!",
         "role": "ANALYST"
       },
-      "admin_1760565652@example.com": {
-        "email": "admin_1760565652@example.com",
+      "admin_1760566360@example.com": {
+        "email": "admin_1760566360@example.com",
         "password": "AdminPass123!",
         "role": "ADMIN"
       },
-      "owner_1760565652@example.com": {
-        "email": "owner_1760565652@example.com",
+      "owner_1760566360@example.com": {
+        "email": "owner_1760566360@example.com",
         "password": "OwnerPass123!",
         "role": "OWNER"
       }
     },
     "orgs": {
       "TestOrg1": {
-        "org_id": "8de35461-74cb-4a71-b489-e7def00da0f1",
+        "org_id": "323612c7-7726-4610-87af-0e6eda6f5530",
         "name": "TestOrg1",
-        "owner": "owner_1760565652@example.com"
+        "owner": "owner_1760566360@example.com"
       },
       "TestOrg2": {
-        "org_id": "4ee6a311-495f-4301-8d70-a2369904d875",
+        "org_id": "5c79b7f0-f9e1-4b54-bb40-069d385c49d6",
         "name": "TestOrg2",
-        "owner": "owner_1760565652@example.com"
+        "owner": "owner_1760566360@example.com"
       }
     }
   }
