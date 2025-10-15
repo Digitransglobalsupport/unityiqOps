@@ -658,6 +658,22 @@ async def dashboard_finance(org_id: str, ctx: RequestContext = Depends(require_r
     companies = await db.companies.find({"org_id": org_id, "is_active": True}, {"_id": 0}).to_list(50)
     # Pull data health warnings from last CSV ingest
     health = await db.data_health.find_one({"org_id": org_id}, {"_id": 0})
+    # Customer lens (if CRM data exists)
+    opps_doc = await db.cross_sell_opps.find_one({"org_id": org_id}, {"_id": 0})
+    masters_doc = await db.customer_master.find_one({"org_id": org_id}, {"_id": 0})
+    customer_lens = None
+    if opps_doc and masters_doc:
+        opps = opps_doc.get("items", [])
+        recent = opps[:3]
+        customer_lens = {
+            "shared_accounts": sum(1 for m in (masters_doc.get("items", [])) if len({c.get("company_id") for c in m.get("companies", []) if c.get("company_id")}) >= 2),
+            "cross_sell_count": len(opps),
+            "cross_sell_value": sum(o.get("expected_value", 0) for o in opps),
+            "recent_opps": [
+                {"master_id": o.get("master_id"), "name": o.get("name"), "companies": o.get("companies", []), "expected_value": o.get("expected_value"), "nba": o.get("next_best_action")}
+                for o in recent
+            ]
+        }
     # Add percentile banding for demo
     demo_companies = companies or [
         {"company_id": "CO1", "name": "Alpha Ltd", "currency": "GBP", "kpis": {"revenue": 650000, "gm_pct": 44.0, "opex": 240000, "ebitda": 190000, "dso_days": 42}, "score": {"s_fin": 78}, "percentile": 82},
@@ -674,7 +690,8 @@ async def dashboard_finance(org_id: str, ctx: RequestContext = Depends(require_r
         },
         "kpis": {"revenue": 1250000, "gm_pct": 41.2, "opex": 520000, "ebitda": 230000, "dso_days": 47},
         "companies": demo_companies,
-        "data_health": {"stale_days": 0, "missing_fields": [], "warnings": (health or {}).get("warnings", [])}
+        "data_health": {"stale_days": 0, "missing_fields": [], "warnings": (health or {}).get("warnings", [])},
+        "customer_lens": customer_lens
     }
 
 @api.get("/connections/status")
