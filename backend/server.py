@@ -190,10 +190,7 @@ async def get_org_context(user: dict, request: Request) -> RequestContext:
     return RequestContext(user_id=user["user_id"], org_id=membership["org_id"], role=role)
 
 def require_role(required: str):
-    async def _checker(ctx: RequestContext = Depends(lambda user=Depends(get_current_user), req: Request = None: None)):
-        # This wrapper is not used directly; proper dependency defined below
-        return ctx
-    # We'll return a dependency function below
+    # Returns a dependency that enforces the required role within current org context
     async def dependency(user: dict = Depends(get_current_user), request: Request = None):
         ctx = await get_org_context(user, request)
         if ctx.org_id is None:
