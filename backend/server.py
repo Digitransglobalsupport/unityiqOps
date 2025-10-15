@@ -315,6 +315,27 @@ async def verify_email(payload: VerifyEmailRequest):
 
 @api.post("/auth/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, request: Request):
+
+# Convenience GET endpoint for verification via link
+@api.get("/auth/verify-email")
+async def verify_email_get(token: str):
+    try:
+        data = decode_jwt(token)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    if data.get("typ") != "email_verify":
+        raise HTTPException(status_code=400, detail="Invalid token type")
+    user_id = data.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid token payload")
+    res = await db.users.update_one({"user_id": user_id}, {"$set": {"email_verified": True}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    await audit_log_entry(None, user_id, "verify_email", "user", {})
+    return {"message": "Email verified"}
+
     rate_limit(f"login:{request.client.host}", 30, 60)
     user = await db.users.find_one({"email": payload.email.lower()}, {"_id": 0})
     if not user or not verify_password(payload.password, user.get("password_hash", "")):
