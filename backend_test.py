@@ -12,7 +12,7 @@ import io
 from datetime import datetime
 from typing import Dict, Optional, List, Tuple
 
-class IdentityTenancyTester:
+class FinanceDashboardTester:
     def __init__(self, base_url: str = "https://ai-assistant-245.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
@@ -25,7 +25,7 @@ class IdentityTenancyTester:
         self.orgs = {}   # org_name -> org_data
         self.memberships = {}  # email -> [membership_data]
         
-        print(f"🚀 Starting Identity & Tenancy API Tests")
+        print(f"🚀 Starting Finance Dashboard API Tests")
         print(f"📍 Base URL: {self.base_url}")
         print("=" * 60)
 
