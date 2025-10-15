@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const { currentOrgId, role, setCurrentOrgId } = useOrg();
-  const { fetchMe } = useAuth();
+  const { fetchMe, user } = useAuth();
   const navigate = useNavigate();
   const [orgs, setOrgs] = useState([]);
   const [orgName, setOrgName] = useState("");
@@ -15,6 +15,14 @@ export default function Dashboard() {
   const fetchOrgs = async () => {
     const { data } = await api.get("/orgs");
     setOrgs(data);
+    // auto-select if exactly one org and user is verified
+    if ((data || []).length === 1 && user?.email_verified) {
+      const only = data[0];
+      if (only?.org_id && only.org_id !== currentOrgId) {
+        setCurrentOrgId(only.org_id);
+        navigate("/dashboard/finance");
+      }
+    }
   };
 
   useEffect(() => {
