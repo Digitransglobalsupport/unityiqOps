@@ -298,6 +298,22 @@ async def get_status_checks():
             it["timestamp"] = datetime.fromisoformat(it["timestamp"])  
     return items
 
+@api.post("/auth/request-verify")
+async def request_verify(user: dict = Depends(get_current_user)):
+    # send a new email verification token to the authenticated user
+    verify_token = sign_jwt({"sub": user["user_id"], "typ": "email_verify"}, ttl_seconds=24*3600)
+    await send_dev_email(
+        to=user["email"],
+        subject="Verify your email",
+        body=f"Click to verify: /api/auth/verify-email?token={verify_token}",
+        action="verify_email",
+        token=verify_token,
+        url_path=f"/api/auth/verify-email?token={verify_token}",
+    )
+    await audit_log_entry(None, user["user_id"], "request_verify", "user", {})
+    return {"sent": True}
+
+
 # --- Auth Routes ---
 @api.post("/auth/signup")
 async def signup(payload: SignupRequest, request: Request):
