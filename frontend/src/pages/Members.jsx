@@ -19,7 +19,7 @@ export default function Members() {
 
   useEffect(() => {
     fetchMembers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, [currentOrgId]);
 
   const invite = async () => {
