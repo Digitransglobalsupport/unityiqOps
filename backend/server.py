@@ -756,6 +756,166 @@ async def finance_csv(org_id: str = Form(...), pl: UploadFile | None = File(None
         except:
             warnings.append("BS numeric parse failed - row skipped")
             continue
+
+# --- Day 2: CRM Ingestion (Mock HubSpot + CSV fallback) ---
+from rapidfuzz import fuzz
+
+# Schemas for Day 2
+# customer_master: master records from dedupe
+# cross_sell_opps: opportunities inferred
+
+@api.post("/crm/hubspot/mock/ingest")
+async def hubspot_mock_ingest(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("ADMIN"))):
+    org_id = ctx.org_id
+    # Mock arrays as if from HubSpot
+    contacts = [
+        {"id": "C1", "email": "alice@alphaltd.co.uk", "firstname": "Alice", "lastname": "A", "phone": "+44 20 1234 0001"},
+        {"id": "C2", "email": "bob@betabv.eu", "firstname": "Bob", "lastname": "B", "phone": "+31 20 1234 0002"},
+        {"id": "C3", "email": "alice@beta-bv.com", "firstname": "Alice", "lastname": "A", "phone": "+31 20 1234 0003"}
+    ]
+    companies = [
+        {"id": "CO1", "name": "Alpha Ltd", "domain": "alphaltd.co.uk"},
+        {"id": "CO2", "name": "Beta BV", "domain": "beta-bv.com"}
+    ]
+    deals = [
+        {"id": "D1", "company_id": "CO1", "amount": 12000, "stage": "closedwon", "name": "Alpha Suite"},
+        {"id": "D2", "company_id": "CO2", "amount": 0, "stage": "prospecting", "name": "Intro"}
+    ]
+    await db.crm_contacts.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": contacts, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await db.crm_companies.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": companies, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await db.crm_deals.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": deals, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "crm_mock_ingest", "crm", {"counts": {"contacts": len(contacts), "companies": len(companies), "deals": len(deals)}})
+    return {"ok": True, "counts": {"contacts": len(contacts), "companies": len(companies), "deals": len(deals)}}
+
+@api.post("/crm/csv/ingest")
+async def crm_csv_ingest(org_id: str = Form(...), contacts: UploadFile | None = File(None), companies: UploadFile | None = File(None), deals: UploadFile | None = File(None), ctx: RequestContext = Depends(require_role("ANALYST"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    import csv
+    def read_csv(file: UploadFile | None) -> List[Dict[str, str]]:
+        if not file:
+            return []
+        content = file.file.read().decode("utf-8", errors="ignore")
+        reader = csv.DictReader(content.splitlines())
+        rows = []
+        for row in reader:
+            rows.append({k.strip().lower(): (v or "").strip() for k, v in row.items()})
+        return rows
+    cts = read_csv(contacts)
+    cps = read_csv(companies)
+    dls = read_csv(deals)
+    await db.crm_contacts.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": cts, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await db.crm_companies.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": cps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await db.crm_deals.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": dls, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "crm_csv_ingest", "crm", {"counts": {"contacts": len(cts), "companies": len(cps), "deals": len(dls)}})
+    return {"ok": True, "counts": {"contacts": len(cts), "companies": len(cps), "deals": len(dls)}}
+
+# Identity Resolution / Deduper
+@api.post("/crm/dedupe/run")
+async def crm_dedupe_run(ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = ctx.org_id
+    rec_c = await db.crm_contacts.find_one({"org_id": org_id}) or {}
+    rec_cp = await db.crm_companies.find_one({"org_id": org_id}) or {}
+    contacts = rec_c.get("items", [])
+    companies = rec_cp.get("items", [])
+    # Build domain map from companies
+    domain_to_company = { (c.get("domain") or "").lower(): c for c in companies }
+    master: Dict[str, Dict[str, Any]] = {}
+    pairs: List[Dict[str, Any]] = []
+
+    def norm_phone(p: str) -> str:
+        return ''.join(ch for ch in (p or '') if ch.isdigit())[-10:]
+
+    for ct in contacts:
+        email = (ct.get("email") or "").lower()
+        domain = email.split("@")[-1] if "@" in email else ""
+        name = f"{ct.get('firstname','').strip()} {ct.get('lastname','').strip()}".strip()
+        phone = norm_phone(ct.get("phone"))
+        key = email or (domain + ":" + phone)
+        if not key:
+            key = str(uuid.uuid4())
+        if key not in master:
+            master[key] = {
+                "master_id": str(uuid.uuid4()),
+                "canonical_name": name or (domain or "Unknown"),
+                "emails": [email] if email else [],
+                "domains": [domain] if domain else [],
+                "companies": [],
+                "confidence": 1.0 if email else 0.8
+            }
+        else:
+            # fuzzy boost if same name similar
+            sim = fuzz.token_sort_ratio(master[key]["canonical_name"], name) / 100.0
+            master[key]["confidence"] = max(master[key]["confidence"], min(1.0, 0.8 + 0.2*sim))
+            if email and email not in master[key]["emails"]:
+                master[key]["emails"].append(email)
+            if domain and domain not in master[key]["domains"]:
+                master[key]["domains"].append(domain)
+        # attach company by domain match
+        co = domain_to_company.get(domain)
+        if co:
+            comp_entry = {"company_id": co.get("id") or co.get("company_id"), "crm": "hubspot"}
+            if comp_entry not in master[key]["companies"]:
+                master[key]["companies"].append(comp_entry)
+
+    master_list = list(master.values())
+    # Persist
+    await db.customer_master.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": master_list, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await db.match_pairs.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": pairs, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "crm_dedupe", "crm", {"masters": len(master_list)})
+    return {"ok": True, "masters": len(master_list)}
+
+# Cross-Sell Recommender
+@api.post("/crm/cross-sell/run")
+async def crm_cross_sell_run(ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = ctx.org_id
+    masters_doc = await db.customer_master.find_one({"org_id": org_id}) or {}
+    deals_doc = await db.crm_deals.find_one({"org_id": org_id}) or {}
+    masters = masters_doc.get("items", [])
+    deals = deals_doc.get("items", [])
+
+    # Index deals by company
+    deals_by_company: Dict[str, List[Dict[str, Any]]] = {}
+    for d in deals:
+        cid = d.get("company_id") or d.get("company")
+        if cid:
+            deals_by_company.setdefault(cid, []).append(d)
+
+    opps: List[Dict[str, Any]] = []
+    for m in masters:
+        comps = [c.get("company_id") for c in m.get("companies", []) if c.get("company_id")]
+        uniq = list({c for c in comps})
+        if len(uniq) >= 2:
+            # shared account → candidate
+            rationale = "Shared buyer across companies"
+            expected_value = 12000
+            nba = "Introduce account owners across companies"
+            opps.append({
+                "master_id": m["master_id"],
+                "companies": uniq,
+                "rationale": rationale,
+                "expected_value": expected_value,
+                "next_best_action": nba
+            })
+
+    # Persist
+    await db.cross_sell_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": opps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(org_id, None, "crm_cross_sell", "crm", {"opps": len(opps)})
+    return {"ok": True, "opps": len(opps)}
+
+@api.get("/crm/dashboard")
+async def crm_dashboard(org_id: str, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    opps_doc = await db.cross_sell_opps.find_one({"org_id": org_id}) or {}
+    masters_doc = await db.customer_master.find_one({"org_id": org_id}) or {}
+    kpis = {
+        "shared_accounts": sum(1 for m in (masters_doc.get("items", [])) if len({c.get("company_id") for c in m.get("companies", []) if c.get("company_id")}) >= 2),
+        "cross_sell_value": sum(o.get("expected_value", 0) for o in (opps_doc.get("items", []))),
+        "churn_risk": 0
+    }
+    return {"kpis": kpis, "opps": opps_doc.get("items", []), "masters": masters_doc.get("items", [])}
+
         company_id = r.get('company_id') or 'UNKNOWN'
         await db.bs.update_one(
             {"org_id": org_id, "company_id": company_id, "period": period},
