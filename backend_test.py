@@ -96,12 +96,15 @@ class FinanceDashboardTester:
             return data
         return []
 
-    def find_email_by_action(self, action: str, to_email: str) -> Optional[Dict]:
-        """Find specific email by action and recipient"""
-        emails = self.get_dev_emails()
-        for email in emails:
-            if email.get("action") == action and email.get("to") == to_email:
-                return email
+    def find_email_by_action(self, action: str, to_email: str, max_retries: int = 3) -> Optional[Dict]:
+        """Find specific email by action and recipient with retries"""
+        for attempt in range(max_retries):
+            emails = self.get_dev_emails()
+            for email in emails:
+                if email.get("action") == action and email.get("to") == to_email:
+                    return email
+            if attempt < max_retries - 1:
+                time.sleep(2)  # Wait before retry
         return None
 
     # === AUTHENTICATION TESTS ===
