@@ -601,6 +601,14 @@ async def finance_refresh(body: Dict[str, Any], ctx: RequestContext = Depends(re
     org_id = body.get("org_id")
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
+
+@api.get("/sync-jobs/{job_id}")
+async def get_sync_job(job_id: str, ctx: RequestContext = Depends(require_role("ANALYST"))):
+    job = await db.sync_jobs.find_one({"org_id": ctx.org_id, "job_id": job_id}, {"_id": 0})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
     # Mock job and KPIs
     job_id = str(uuid.uuid4())
     await db.sync_jobs.insert_one({
