@@ -33,6 +33,17 @@ function KpiCards({ kpis }) {
       ))}
     </div>
   );
+function UpgradeCta(){
+  const { currentOrgId } = useOrg();
+  const [plan, setPlan] = useState(null);
+  useEffect(()=>{(async()=>{ try{ const { data } = await api.get(`/plans?org_id=${currentOrgId}`); setPlan(data.plan||null);}catch{}})()},[currentOrgId]);
+  const upgrade = async () => {
+    try { const { data } = await api.post('/billing/checkout', { org_id: currentOrgId, plan: 'LITE' }); window.location.href = data.url; } catch(e){ alert(e?.response?.data?.detail || 'Checkout failed'); }
+  };
+  if (!plan || plan?.tier === 'LITE' || plan?.tier === 'PRO') return null;
+  return <button data-testid="upgrade-snapshot" className="px-3 py-1 rounded bg-amber-500 text-white" onClick={upgrade}>Upgrade to Snapshot (£997)</button>;
+}
+
 }
 
 function CompaniesTable({ companies }) {
