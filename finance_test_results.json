@@ -1,0 +1,89 @@
+{
+  "summary": {
+    "total_tests": 11,
+    "passed_tests": 11,
+    "success_rate": 100.0
+  },
+  "detailed_results": [
+    {
+      "test": "Setup: Owner Email Verified",
+      "success": true,
+      "details": "Owner email verified",
+      "timestamp": "2025-10-15T18:06:26.911728"
+    },
+    {
+      "test": "Setup: Owner Login",
+      "success": true,
+      "details": "Owner logged in successfully",
+      "timestamp": "2025-10-15T18:06:27.180567"
+    },
+    {
+      "test": "Setup: Organization Created",
+      "success": true,
+      "details": "Org 'TestOrg_1760551587' created",
+      "timestamp": "2025-10-15T18:06:27.222869"
+    },
+    {
+      "test": "CSV Ingest",
+      "success": true,
+      "details": "Ingested: {'pl': 2, 'ar': 2, 'bs': 2}, Warnings: 1",
+      "timestamp": "2025-10-15T18:06:27.310776"
+    },
+    {
+      "test": "Dashboard Finance",
+      "success": true,
+      "details": "Dashboard loaded with score: 72, weights: True, drivers: True",
+      "timestamp": "2025-10-15T18:06:27.359669"
+    },
+    {
+      "test": "Finance Trends",
+      "success": true,
+      "details": "Found 4 series with >=2 points: ['revenue', 'gm_pct', 'opex', 'dso_days']",
+      "timestamp": "2025-10-15T18:06:27.397394"
+    },
+    {
+      "test": "Connections Status",
+      "success": true,
+      "details": "Found 0 valid tenant objects",
+      "timestamp": "2025-10-15T18:06:27.436658"
+    },
+    {
+      "test": "Export PDF",
+      "success": true,
+      "details": "PDF generated successfully, size: 1746 bytes",
+      "timestamp": "2025-10-15T18:06:27.521748"
+    },
+    {
+      "test": "Onboarding: Xero OAuth Start",
+      "success": true,
+      "details": "Auth URL: /api/mock/xero/consent?state=4cb5c7f6-687c-4070-8eee-6d961df2932a",
+      "timestamp": "2025-10-15T18:06:27.563767"
+    },
+    {
+      "test": "Onboarding: Companies Discover",
+      "success": true,
+      "details": "Found 2 companies",
+      "timestamp": "2025-10-15T18:06:27.606899"
+    },
+    {
+      "test": "Onboarding: Companies Select",
+      "success": true,
+      "details": "Companies selected successfully",
+      "timestamp": "2025-10-15T18:06:27.648386"
+    }
+  ],
+  "test_data": {
+    "users": {
+      "owner_1760551585@example.com": {
+        "role": "OWNER"
+      }
+    },
+    "orgs": {
+      "TestOrg_1760551587": {
+        "org_id": "674b8806-b700-4b65-9796-368f6fce1dd1",
+        "name": "TestOrg_1760551587",
+        "owner": "owner_1760551585@example.com"
+      }
+    }
+  }
+}
