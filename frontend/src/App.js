@@ -38,14 +38,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/dev/emails"
-        element={
-          <ProtectedRoute>
-            <DevEmails />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/dev/emails" element={<DevEmails />} />
     </Routes>
   );
 }
