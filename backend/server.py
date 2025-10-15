@@ -745,6 +745,29 @@ async def accept_invite(payload: VerifyEmailRequest, ctx_user: dict = Depends(ge
         data = decode_jwt(payload.token)
     except jwt.ExpiredSignatureError:
 
+@api.post("/export/snapshot")
+async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("VIEWER"))):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    from fastapi.responses import StreamingResponse
+    import io
+    org_id = body.get("org_id")
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, 800, "Synergy Snapshot")
+    c.setFont("Helvetica", 10)
+    c.drawString(50, 780, f"Org: {org_id}")
+    c.drawString(50, 768, f"Period: {body.get('period_from','-')} to {body.get('period_to','-')}")
+    c.drawString(50, 750, "This is a mock PDF for demo purposes. Charts and tables will render here.")
+    c.showPage()
+    c.save()
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=synergy_snapshot.pdf"})
+
+
 # Token consumption redirects for reset and invite accept (public GET)
 @api.get("/reset/consume")
 async def reset_consume(token: str):
