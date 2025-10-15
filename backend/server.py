@@ -536,12 +536,14 @@ async def mock_xero_consent(state: str, ctx: RequestContext = Depends(require_ro
 
 @api.post("/connections/xero/oauth/callback")
 async def xero_callback(body: Dict[str, Any]):
-    # Store mock tokens encrypted under org_id from state mapping (for mock, accept org_id in body)
-    org_id = body.get("org_id")
+    # Store mock tokens encrypted under org_id resolved via state
+    state = body.get("state")
+    st = await db.oauth_states.find_one({"state": state})
+    org_id = (st or {}).get("org_id") or body.get("org_id")
     code = body.get("code") or "MOCK_CODE"
     tenant_id = "MOCK_TENANT_1"
     if not org_id:
-        raise HTTPException(status_code=400, detail="org_id required in body for mock")
+        raise HTTPException(status_code=400, detail="org_id required")
     enc_access = aesgcm_encrypt_for_org(org_id, f"access::{code}")
     enc_refresh = aesgcm_encrypt_for_org(org_id, f"refresh::{code}")
     await db.connections.update_one(
