@@ -641,6 +641,12 @@ class CompaniesSelectBody(BaseModel):
 async def companies_select(body: CompaniesSelectBody, ctx: RequestContext = Depends(require_role("ADMIN"))):
     if ctx.org_id != body.org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
+    limits = await get_plan_limits(body.org_id)
+    # enforce company count limit
+    existing = await db.companies.count_documents({"org_id": body.org_id, "is_active": True})
+    requested = len(body.companies)
+    if existing + requested > limits["companies"]:
+        raise HTTPException(status_code=403, detail={"code":"LIMIT_EXCEEDED", "limit":"companies", "allowed": limits["companies"], "current": existing + requested})
     for c in body.companies:
         await db.companies.update_one(
             {"org_id": body.org_id, "company_id": c["company_id"]},
