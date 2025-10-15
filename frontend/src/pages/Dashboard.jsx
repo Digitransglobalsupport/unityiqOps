@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
 import api from "@/api/client";
 import { useOrg } from "@/context/OrgContext";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
-  const { currentOrgId, role } = useOrg();
+  const { currentOrgId, role, setCurrentOrgId } = useOrg();
+  const { fetchMe } = useAuth();
+  const navigate = useNavigate();
   const [orgs, setOrgs] = useState([]);
   const [orgName, setOrgName] = useState("");
   const [message, setMessage] = useState(null);
@@ -22,10 +26,19 @@ export default function Dashboard() {
       const { data } = await api.post("/orgs", { name: orgName || "My Org" });
       setMessage(`Created org ${data.name}`);
       setOrgName("");
+      // update memberships and org context, then go to finance dashboard
+      await fetchMe();
+      setCurrentOrgId(data.org_id);
       fetchOrgs();
+      navigate("/dashboard/finance");
     } catch (e) {
       setMessage(e?.response?.data?.detail || "Create org failed");
     }
+  };
+
+  const selectOrg = (org_id) => {
+    setCurrentOrgId(org_id);
+    navigate("/dashboard/finance");
   };
 
   return (
@@ -48,7 +61,10 @@ export default function Dashboard() {
                 <div className="font-medium">{o.name}</div>
                 <div className="text-xs text-gray-500">{o.org_id}</div>
               </div>
-              <div className="text-xs text-gray-600">Role: {role || '-'}</div>
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-gray-600">Role: {role || '-'}</div>
+                <button data-testid={`org-select-${o.org_id}`} className="text-xs border rounded px-2 py-1" onClick={() => selectOrg(o.org_id)}>Select</button>
+              </div>
             </div>
           </li>
         ))}
