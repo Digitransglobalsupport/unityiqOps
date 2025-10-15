@@ -1118,6 +1118,13 @@ async def alerts_test(body: AlertTestPayload, ctx: RequestContext = Depends(requ
     owner_membership = await db.memberships.find_one({"org_id": body.org_id, "role": "OWNER"})
     owner = None
     if owner_membership and owner_membership.get("user_id"):
+        owner = await db.users.find_one({"user_id": owner_membership.get("user_id")}, {"_id": 0})
+        if owner and owner.get("email"):
+            await send_dev_email(owner.get("email"), "Alert notification", text, action="alert")
+            delivered.append("email")
+    
+    await audit_log_entry(body.org_id, ctx.user_id, "alert_test", "alert", {"delivered": delivered})
+    return {"delivered": delivered}
 
 # --- Day 3: Vendor Optimizer (Spend → Savings) ---
 from fastapi import UploadFile
