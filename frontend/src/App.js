@@ -2,7 +2,7 @@ import React from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { OrgProvider } from "@/context/OrgContext";
+import { OrgProvider, useOrg } from "@/context/OrgContext";
 import NavBar from "@/components/NavBar";
 import VerifyBanner from "@/components/VerifyBanner";
 
@@ -17,7 +17,7 @@ import AcceptInvite from "@/pages/AcceptInvite";
 import OnboardingWizard from "@/pages/OnboardingWizard";
 import FinanceDashboard from "@/pages/FinanceDashboard";
 import CsvIngest from "@/pages/CsvIngest";
-import { useOrg } from "@/context/OrgContext";
+import CrmIngest from "@/pages/CrmIngest";
 
 function ProtectedRoute({ children, requireVerified=false, minRole=null }) {
   const { isAuthenticated, loading, user } = useAuth();
@@ -61,6 +61,12 @@ function AppRoutes() {
       <Route path="/ingest/csv" element={
         <ProtectedRoute requireVerified={true} minRole="ANALYST">
           <CsvIngest />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/ingest/crm" element={
+        <ProtectedRoute requireVerified={true} minRole="ANALYST">
+          <CrmIngest />
         </ProtectedRoute>
       } />
 
