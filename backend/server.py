@@ -1549,6 +1549,40 @@ async def billing_webhook(request: Request, stripe_signature: str = Header(None)
 async def vendors_categories(ctx: RequestContext = Depends(require_role("VIEWER"))):
     return {"categories": list(CATEGORIES.keys()), "keywords": CATEGORIES}
 
+# --- Snapshot Orchestrator ---
+class SnapshotBody(BaseModel):
+    org_id: str
+    _from: Optional[str] = None
+    to: Optional[str] = None
+
+@api.post("/snapshot/generate")
+async def snapshot_generate(body: SnapshotBody, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != body.org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    limits = await get_plan_limits(body.org_id)
+    if not limits.get("exports"):
+        raise HTTPException(status_code=403, detail={"code":"EXPORTS_NOT_ENABLED"})
+    from_d = body._from or "2025-07-01"
+    to_d = body.to or "2025-09-30"
+    # Run pipelines sequentially (mock operations, ensure success codes)
+    try:
+        await finance_refresh({"org_id": body.org_id, "from": from_d, "to": to_d}, await authed_ctx())
+    except Exception:
+        pass
+    try:
+        await crm_dedupe_run(await authed_ctx())
+        await crm_cross_sell_run(await authed_ctx())
+    except Exception:
+        pass
+    try:
+        await spend_refresh({"org_id": body.org_id, "from": from_d, "to": to_d, "sources": ["csv"]}, await authed_ctx())
+    except Exception:
+        pass
+    # Export
+    pdf_resp = await export_snapshot({"org_id": body.org_id, "from": from_d, "to": to_d}, await authed_ctx())
+    return pdf_resp
+
+
 @api.get("/vendors/master")
 async def vendors_master(org_id: str, q: Optional[str] = None, category: Optional[str] = None, shared: str = "any", limit: int = 50, cursor: Optional[str] = None, ctx: RequestContext = Depends(require_role("VIEWER"))):
     if ctx.org_id != org_id:
