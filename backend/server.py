@@ -656,6 +656,8 @@ async def dashboard_finance(org_id: str, ctx: RequestContext = Depends(require_r
         raise HTTPException(status_code=400, detail="Org mismatch")
     score = await db.synergy_scores.find_one({"org_id": org_id}, {"_id": 0})
     companies = await db.companies.find({"org_id": org_id, "is_active": True}, {"_id": 0}).to_list(50)
+    # Pull data health warnings from last CSV ingest
+    health = await db.data_health.find_one({"org_id": org_id}, {"_id": 0})
     # Add percentile banding for demo
     demo_companies = companies or [
         {"company_id": "CO1", "name": "Alpha Ltd", "currency": "GBP", "kpis": {"revenue": 650000, "gm_pct": 44.0, "opex": 240000, "ebitda": 190000, "dso_days": 42}, "score": {"s_fin": 78}, "percentile": 82},
