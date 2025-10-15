@@ -939,6 +939,123 @@ async def crm_cross_sell_run(ctx: RequestContext = Depends(require_role("ANALYST
         n = len(v)
         return float(v[n//2] if n % 2 == 1 else (v[n//2-1]+v[n//2])/2)
 
+# --- Customers Dashboard APIs ---
+@api.get("/customers/master")
+async def customers_master(org_id: str, q: Optional[str] = None, min_conf: float = 0.7, limit: int = 50, cursor: Optional[str] = None, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    doc = await db.customer_master.find_one({"org_id": org_id}) or {}
+    items = doc.get("items", [])
+    # filter
+    def matches(m):
+        if m.get("confidence", 0) < min_conf:
+            return False
+        if q:
+            s = q.lower()
+            fields = [m.get("canonical_name",""), *m.get("emails", []), *m.get("domains", [])]
+            return any(s in (f or "").lower() for f in fields)
+        return True
+    filt = [m for m in items if matches(m)]
+    stats = {
+        "masters": len(items),
+        "shared_accounts": sum(1 for m in items if len({c.get("company_id") for c in m.get("companies", []) if c.get("company_id")}) >= 2),
+        "avg_conf": round(sum(m.get("confidence",0) for m in items)/len(items), 2) if items else 0
+    }
+    # simple cursor: page index base64
+    page = int((int(cursor or "0")) or 0)
+    start = page*limit
+    end = start+limit
+    next_cursor = str(page+1) if end < len(filt) else None
+    out_items = [
+        {"master_id": m.get("master_id"), "canonical_name": m.get("canonical_name"), "confidence": m.get("confidence"), "companies": [c.get("company_id") for c in m.get("companies", []) if c.get("company_id")], "emails": m.get("emails", []), "domains": m.get("domains", []), "review_state": m.get("review_state")}
+        for m in filt[start:end]
+    ]
+    return {"stats": stats, "items": out_items, "cursor": next_cursor}
+
+@api.get("/opps/cross-sell")
+async def opps_cross_sell(org_id: str, status: str = "open", limit: int = 50, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    doc = await db.cross_sell_opps.find_one({"org_id": org_id}) or {}
+    items = [o for o in doc.get("items", []) if o.get("status", "open") == status]
+    items = sorted(items, key=lambda o: o.get("created_at",""), reverse=True)[:limit]
+    summary = {"count": len(items), "value": sum(o.get("expected_value",0) for o in items)}
+    return {"summary": summary, "items": items}
+
+class ReviewDecision(BaseModel):
+    pair_id: str
+    decision: str  # merge|split
+    master_id: Optional[str] = None
+
+class ReviewPayload(BaseModel):
+    org_id: str
+    decisions: List[ReviewDecision]
+
+@api.post("/crm/dedupe/review")
+async def crm_dedupe_review(payload: ReviewPayload, ctx: RequestContext = Depends(require_role("ANALYST"))):
+    if ctx.org_id != payload.org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    pairs_doc = await db.match_pairs.find_one({"org_id": payload.org_id}) or {"items": []}
+    masters_doc = await db.customer_master.find_one({"org_id": payload.org_id}) or {"items": []}
+    pairs = pairs_doc.get("items", [])
+    masters = {m.get("master_id"): m for m in masters_doc.get("items", [])}
+    applied = 0
+    conflicts: List[str] = []
+    new_items = list(masters.values())
+    for d in payload.decisions:
+        p = next((x for x in pairs if x.get("pair_id") == d.pair_id and x.get("status") == "pending"), None)
+        if not p:
+            conflicts.append(d.pair_id)
+            continue
+        if d.decision == "merge" and d.master_id and p.get("left_id") in masters and p.get("right_id") in masters:
+            left = masters[p["left_id"]]; right = masters[p["right_id"]]
+            # merge right into left
+            left["emails"] = list({*left.get("emails", []), *right.get("emails", [])})
+            left["domains"] = list({*left.get("domains", []), *right.get("domains", [])})
+            left["companies"] = list({tuple(sorted(c.items())) for c in (left.get("companies", []) + right.get("companies", []))})
+            left["companies"] = [dict(c) for c in left["companies"]]
+            left["confidence"] = max(left.get("confidence",0), right.get("confidence",0))
+            left["review_state"] = "human_accepted"
+            # remove right
+            new_items = [x for x in new_items if x.get("master_id") != right.get("master_id")]
+            applied += 1
+            p["status"] = "accepted"
+        elif d.decision == "split":
+            p["status"] = "rejected"
+            applied += 1
+        else:
+            conflicts.append(d.pair_id)
+    # persist updates
+    await db.customer_master.update_one({"org_id": payload.org_id}, {"$set": {"items": new_items, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await db.match_pairs.update_one({"org_id": payload.org_id}, {"$set": {"items": pairs, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(payload.org_id, ctx.user_id, "crm_review", "crm", {"applied": applied, "conflicts": conflicts})
+    return {"applied": applied, "conflicts": conflicts}
+
+class OppStatusPayload(BaseModel):
+    status: str
+    note: Optional[str] = None
+
+@api.post("/opps/{opp_id}/status")
+async def opp_status_update(opp_id: str, body: OppStatusPayload, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    org_id = ctx.org_id
+    doc = await db.cross_sell_opps.find_one({"org_id": org_id}) or {"items": []}
+    updated = False
+    for o in doc.get("items", []):
+        if o.get("opportunity_id") == opp_id:
+            o["status"] = body.status
+            notes = o.get("notes", [])
+            if body.note:
+                notes.append({"note": body.note, "ts": datetime.now(timezone.utc), "by": ctx.user_id})
+            o["notes"] = notes
+            updated = True
+            break
+    if not updated:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    await db.cross_sell_opps.update_one({"org_id": org_id}, {"$set": {"items": doc.get("items", []), "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "opp_status", "opportunity", {"opp_id": opp_id, "status": body.status})
+    return {"ok": True}
+
+
     default_proxy = median(all_amounts) if all_amounts else 10000.0
     WIN_RATE = 0.3
     DURATION = 6
