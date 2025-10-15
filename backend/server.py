@@ -851,6 +851,26 @@ async def accept_invite(payload: VerifyEmailRequest, ctx_user: dict = Depends(ge
     try:
         data = decode_jwt(payload.token)
     except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    if data.get("typ") != "invite":
+        raise HTTPException(status_code=400, detail="Invalid token type")
+    org_id = data.get("org_id")
+    invited_email = (data.get("email") or "").lower()
+    if ctx_user.get("email") != invited_email:
+        raise HTTPException(status_code=403, detail="Token email mismatch")
+    # find pending membership
+    pending = await db.memberships.find_one({"org_id": org_id, "invited_email": invited_email, "status": "INVITED"})
+    if not pending:
+        # if not pending, maybe already active
+        existing = await db.memberships.find_one({"org_id": org_id, "user_id": ctx_user["user_id"]})
+        if existing:
+            return {"message": "Already a member"}
+        raise HTTPException(status_code=404, detail="Invite not found")
+    await db.memberships.update_one({"membership_id": pending["membership_id"]}, {"$set": {"user_id": ctx_user["user_id"], "status": "ACTIVE"}})
+    await audit_log_entry(org_id, ctx_user["user_id"], "accept_invite", "membership", {"membership_id": pending["membership_id"]})
+    return {"message": "Invite accepted"}
 
 @api.post("/export/snapshot")
 async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("VIEWER"))):
@@ -874,7 +894,6 @@ async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(re
     buf.seek(0)
     return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=synergy_snapshot.pdf"})
 
-
 # Token consumption redirects for reset and invite accept (public GET)
 @api.get("/reset/consume")
 async def reset_consume(token: str):
@@ -885,27 +904,6 @@ async def reset_consume(token: str):
 async def invite_accept_redirect(token: str):
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url=f"/accept-invite?token={token}", status_code=302)
-
-        raise HTTPException(status_code=400, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=400, detail="Invalid token")
-    if data.get("typ") != "invite":
-        raise HTTPException(status_code=400, detail="Invalid token type")
-    org_id = data.get("org_id")
-    invited_email = (data.get("email") or "").lower()
-    if ctx_user.get("email") != invited_email:
-        raise HTTPException(status_code=403, detail="Token email mismatch")
-    # find pending membership
-    pending = await db.memberships.find_one({"org_id": org_id, "invited_email": invited_email, "status": "INVITED"})
-    if not pending:
-        # if not pending, maybe already active
-        existing = await db.memberships.find_one({"org_id": org_id, "user_id": ctx_user["user_id"]})
-        if existing:
-            return {"message": "Already a member"}
-        raise HTTPException(status_code=404, detail="Invite not found")
-    await db.memberships.update_one({"membership_id": pending["membership_id"]}, {"$set": {"user_id": ctx_user["user_id"], "status": "ACTIVE"}})
-    await audit_log_entry(org_id, ctx_user["user_id"], "accept_invite", "membership", {"membership_id": pending["membership_id"]})
-    return {"message": "Invite accepted"}
 
 @api.get("/orgs/{org_id}/members")
 async def list_members(org_id: str, ctx: RequestContext = Depends(require_role("ADMIN"))):
