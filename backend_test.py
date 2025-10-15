@@ -744,6 +744,14 @@ class FinanceDashboardTester:
             if self.test_login_flow(analyst_email):
                 # Invite as ANALYST
                 analyst_invite_token = self.test_invite_member(owner_email, org_name, analyst_email, "ANALYST")
+                if not analyst_invite_token:
+                    # Try to find the invite token manually
+                    time.sleep(2)
+                    invite_email = self.find_email_by_action("invite", analyst_email)
+                    if invite_email and invite_email.get("token"):
+                        analyst_invite_token = invite_email["token"]
+                        self.log_test("Manual Invite Token Found", True, "Found invite token manually")
+                
                 if analyst_invite_token:
                     self.test_accept_invite(analyst_email, analyst_invite_token)
         
