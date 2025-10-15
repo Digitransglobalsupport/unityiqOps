@@ -481,14 +481,18 @@ async def invite_member(org_id: str, payload: InviteRequest, ctx: RequestContext
         })
     # Send invite email via DEV store
     invite_token = sign_jwt({"org_id": org_id, "email": email, "typ": "invite"}, 7*24*3600)
+    # Fetch org for clarity fields
+    org = await db.orgs.find_one({"org_id": org_id}, {"_id": 0, "name": 1})
     await send_dev_email(
         to=email,
-        subject="You're invited to join org",
+        subject=f"You're invited to join {org.get('name') if org else 'an organization'}",
         body=f"Join org: /api/invites/accept?token={invite_token}",
         action="invite",
         token=invite_token,
         url_path=f"/api/invites/accept?token={invite_token}",
     )
+    # Also store extra clarity fields
+    await db.dev_emails.update_one({"token": invite_token}, {"$set": {"org_name": (org or {}).get("name"), "role": role}}, upsert=False)
     await audit_log_entry(org_id, ctx.user_id, "invite", "membership", {"email": email, "role": role})
     return {"message": "Invitation sent"}
 @api.post("/invites/accept")
