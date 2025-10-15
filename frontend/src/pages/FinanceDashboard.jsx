@@ -154,6 +154,7 @@ export default function FinanceDashboard() {
       <div className="flex items-center justify-between mb-4">
         <div className="text-2xl font-semibold">Finance Dashboard</div>
         <div className="flex items-center gap-2">
+          <UpgradeCta />
           <button data-testid="refresh-button" disabled={!canRefresh} className={`px-3 py-1 rounded ${canRefresh? 'bg-black text-white':'bg-gray-300 text-gray-600'}`} onClick={refresh}>Refresh</button>
         </div>
       </div>
