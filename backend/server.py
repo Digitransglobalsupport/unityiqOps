@@ -277,7 +277,7 @@ async def signup(payload: SignupRequest, request: Request):
     }
     try:
         await db.users.insert_one(user)
-    except Exception as e:
+    except Exception:
         # duplicate email
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -461,7 +461,7 @@ async def invite_member(org_id: str, payload: InviteRequest, ctx: RequestContext
     invite_token = sign_jwt({"org_id": org_id, "email": email, "typ": "invite"}, 7*24*3600)
     await send_dev_email(
         to=email,
-        subject=f"You're invited to join org",
+        subject="You're invited to join org",
         body=f"Join org: /api/invites/accept?token={invite_token}",
         action="invite",
         token=invite_token,
