@@ -18,6 +18,7 @@ import OnboardingWizard from "@/pages/OnboardingWizard";
 import FinanceDashboard from "@/pages/FinanceDashboard";
 import CsvIngest from "@/pages/CsvIngest";
 import CrmIngest from "@/pages/CrmIngest";
+import CustomersDashboard from "@/pages/CustomersDashboard";
 
 function ProtectedRoute({ children, requireVerified=false, minRole=null }) {
   const { isAuthenticated, loading, user } = useAuth();
@@ -55,6 +56,12 @@ function AppRoutes() {
       <Route path="/dashboard/finance" element={
         <ProtectedRoute requireVerified={true} minRole="VIEWER">
           <FinanceDashboard />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/dashboard/customers" element={
+        <ProtectedRoute requireVerified={true} minRole="VIEWER">
+          <CustomersDashboard />
         </ProtectedRoute>
       } />
 
