@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (isAuthenticated) fetchMe();
     else setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, []);
 
   const login = async (email, password) => {
