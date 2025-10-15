@@ -1508,21 +1508,7 @@ async def billing_webhook(request: Request, stripe_signature: str = Header(None)
                 await db.billing_events.insert_one({"org_id": org_id, "type": "checkout.session.completed", "stripe_id": eid, "amount": data.get("amount_total"), "currency": data.get("currency"), "ts": datetime.now(timezone.utc)})
     return {"ok": True}
 
-            "category": "Vendors",
-            "est_saving": round(tail_total),
-            "status": "open",
-            "owner_user_id": None,
-            "notes": [],
-            "playbook_step": "Eliminate long tail vendors <£300/yr",
-            "evidence": {"tail_total": tail_total},
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
-        })
-
-    await db.savings_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": opps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
-    await audit_log_entry(org_id, ctx.user_id, "spend_refresh", "spend", {"opps": len(opps)})
-
-    # Alerts
+# NOTE: The block below was incorrectly appended due to a prior edit; cleaning up to fix indentation/syntax.
     try:
         settings = await db.org_settings.find_one({"org_id": org_id}) or {}
         webhook = settings.get("slack_webhook_url")
