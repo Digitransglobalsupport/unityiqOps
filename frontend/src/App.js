@@ -14,11 +14,21 @@ import DevEmails from "@/pages/DevEmails";
 import Verify from "@/pages/Verify";
 import ResetPassword from "@/pages/ResetPassword";
 import AcceptInvite from "@/pages/AcceptInvite";
+import OnboardingWizard from "@/pages/OnboardingWizard";
+import FinanceDashboard from "@/pages/FinanceDashboard";
+import CsvIngest from "@/pages/CsvIngest";
+import { useOrg } from "@/context/OrgContext";
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, requireVerified=false, minRole=null }) {
   const { isAuthenticated, loading, user } = useAuth();
+  const { role } = useOrg();
   if (loading) return <div data-testid="loading" className="p-6">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (requireVerified && user && !user.email_verified) return <Navigate to="/dev/emails" replace />;
+  if (minRole) {
+    const order = {VIEWER:1, ANALYST:2, ADMIN:3, OWNER:4};
+    if ((order[role||'']||0) < (order[minRole]||0)) return <Navigate to="/" replace />;
+  }
   return (
     <>
       <VerifyBanner show={user && !user.email_verified} />
@@ -35,6 +45,25 @@ function AppRoutes() {
       <Route path="/verify" element={<Verify />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/accept-invite" element={<AcceptInvite />} />
+
+      <Route path="/onboarding" element={
+        <ProtectedRoute requireVerified={true}>
+          <OnboardingWizard />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/dashboard/finance" element={
+        <ProtectedRoute requireVerified={true} minRole="VIEWER">
+          <FinanceDashboard />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/ingest/csv" element={
+        <ProtectedRoute requireVerified={true} minRole="ANALYST">
+          <CsvIngest />
+        </ProtectedRoute>
+      } />
+
       <Route
         path="/"
         element={
