@@ -685,15 +685,120 @@ async def connections_status(org_id: str, ctx: RequestContext = Depends(require_
         tenants = [{"tenant_id": conn["tenant_id"], "name": "Alpha Ltd"}]
     return {"xero": {"connected": bool(conn), "last_sync_at": (conn or {}).get("updated_at"), "tenants": tenants}}
 
-# CSV ingest fallback (upload placeholder — for MVP provide JSON body with csv-like arrays)
+# CSV ingest with validation. Accepts multipart form-data files: pl, bs (optional), ar
+from fastapi import UploadFile, File, Form
+import csv
+
 @api.post("/ingest/finance/csv")
-async def finance_csv(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("ANALYST"))):
-    org_id = body.get("org_id")
+async def finance_csv(org_id: str = Form(...), pl: UploadFile | None = File(None), bs: UploadFile | None = File(None), ar: UploadFile | None = File(None), ctx: RequestContext = Depends(require_role("ANALYST"))):
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
-    await audit_log_entry(org_id, ctx.user_id, "finance_csv", "ingest", {"keys": list(body.keys())})
-    # Pretend we normalized and stored
-    return {"ok": True}
+
+    warnings: List[str] = []
+    ingested = {"pl": 0, "ar": 0, "bs": 0}
+
+    def read_csv(file: UploadFile | None) -> List[Dict[str, str]]:
+        if not file:
+            return []
+        content = file.file.read().decode("utf-8", errors="ignore")
+        reader = csv.DictReader(content.splitlines())
+        rows = []
+        for row in reader:
+            rows.append({k.strip().lower(): (v or "").strip() for k, v in row.items()})
+        return rows
+
+    def is_period(s: str) -> bool:
+        try:
+            if len(s) != 7 or s[4] != '-':
+                return False
+            y = int(s[:4]); m = int(s[5:7]); return 1 <= m <= 12 and 2000 <= y <= 2100
+        except:
+            return False
+
+    pl_rows = read_csv(pl)
+    bs_rows = read_csv(bs)
+    ar_rows = read_csv(ar)
+
+    # Validate and ingest PL
+    for r in pl_rows:
+        period = r.get('period', '')
+        if not is_period(period):
+            warnings.append(f"PL invalid period '{period}' - row skipped")
+            continue
+        try:
+            revenue = float(r.get('revenue', '0') or 0)
+            cogs = float(r.get('cogs', '0') or 0)
+            opex = float(r.get('opex', '0') or 0)
+        except:
+            warnings.append("PL numeric parse failed - row skipped")
+            continue
+        company_id = r.get('company_id') or 'UNKNOWN'
+        gm_pct = (revenue - cogs) / revenue * 100 if revenue else 0.0
+        ebitda = revenue - cogs - opex
+        await db.pl.update_one(
+            {"org_id": org_id, "company_id": company_id, "period": period},
+            {"$set": {"org_id": org_id, "company_id": company_id, "period": period, "revenue": revenue, "cogs": cogs, "opex": opex, "gm_pct": gm_pct, "ebitda": ebitda}},
+            upsert=True
+        )
+        ingested["pl"] += 1
+
+    # Validate and ingest BS
+    receivables_map: Dict[Tuple[str, str], float] = {}
+    for r in bs_rows:
+        period = r.get('period', '')
+        if not is_period(period):
+            warnings.append(f"BS invalid period '{period}' - row skipped")
+            continue
+        try:
+            receivables = float(r.get('receivables', '0') or 0)
+        except:
+            warnings.append("BS numeric parse failed - row skipped")
+            continue
+        company_id = r.get('company_id') or 'UNKNOWN'
+        await db.bs.update_one(
+            {"org_id": org_id, "company_id": company_id, "period": period},
+            {"$set": {"org_id": org_id, "company_id": company_id, "period": period, "receivables": receivables}},
+            upsert=True
+        )
+        receivables_map[(company_id, period)] = receivables
+        ingested["bs"] += 1
+
+    # Validate and ingest AR
+    status_map = {"PAID":"PAID","AUTH":"AUTH","DUE":"DUE","VOID":"VOID"}
+    for r in ar_rows:
+        inv_id = r.get('invoice_id') or str(uuid.uuid4())
+        company_id = r.get('company_id') or 'UNKNOWN'
+        issue_date = r.get('issue_date') or None
+        due_date = r.get('due_date') or None
+        if not due_date and issue_date:
+            try:
+                # impute +30 days
+                idt = datetime.fromisoformat(issue_date)
+                due_date = (idt + timedelta(days=30)).date().isoformat()
+                warnings.append(f"AR invoice {inv_id} missing due_date – imputed +30 days from issue_date")
+            except:
+                pass
+        try:
+            amount = float(r.get('amount', '0') or 0)
+        except:
+            warnings.append(f"AR invoice {inv_id} amount parse failed – skipped")
+            continue
+        status = r.get('status', 'DUE').upper()
+        if status not in status_map:
+            warnings.append(f"AR invoice {inv_id} unknown status '{status}' – mapped to DUE")
+            status = 'DUE'
+        await db.ar.update_one(
+            {"org_id": org_id, "invoice_id": inv_id},
+            {"$set": {"org_id": org_id, "invoice_id": inv_id, "company_id": company_id, "issue_date": issue_date, "due_date": due_date, "amount": amount, "status": status}},
+            upsert=True
+        )
+        ingested["ar"] += 1
+
+    # Update data health warnings
+    await db.data_health.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "warnings": warnings, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+
+    await audit_log_entry(org_id, ctx.user_id, "finance_csv", "ingest", {"ingested": ingested, "warnings": len(warnings)})
+    return {"ok": True, "ingested": ingested, "warnings": warnings}
 
     email = payload.email.lower()
     role = payload.role
