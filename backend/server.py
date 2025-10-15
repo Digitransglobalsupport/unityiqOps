@@ -675,7 +675,10 @@ async def connections_status(org_id: str, ctx: RequestContext = Depends(require_
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
     conn = await db.connections.find_one({"org_id": org_id, "vendor": "xero"}, {"_id": 0})
-    return {"xero": {"connected": bool(conn), "last_sync_at": (conn or {}).get("updated_at"), "tenants": [((conn or {}).get("tenant_id") or "")]}}
+    tenants = []
+    if conn and conn.get("tenant_id"):
+        tenants = [{"tenant_id": conn["tenant_id"], "name": "Alpha Ltd"}]
+    return {"xero": {"connected": bool(conn), "last_sync_at": (conn or {}).get("updated_at"), "tenants": tenants}}
 
 # CSV ingest fallback (upload placeholder — for MVP provide JSON body with csv-like arrays)
 @api.post("/ingest/finance/csv")
