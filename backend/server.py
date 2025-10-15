@@ -876,31 +876,59 @@ async def crm_cross_sell_run(ctx: RequestContext = Depends(require_role("ANALYST
 
     # Index deals by company
     deals_by_company: Dict[str, List[Dict[str, Any]]] = {}
+    all_amounts: List[float] = []
     for d in deals:
         cid = d.get("company_id") or d.get("company")
+        try:
+            amt = float(d.get("amount", 0) or 0)
+        except:
+            amt = 0.0
+        all_amounts.append(amt)
         if cid:
-            deals_by_company.setdefault(cid, []).append(d)
+            deals_by_company.setdefault(cid, []).append({**d, "amount": amt})
+
+    def median(vals: List[float]) -> float:
+        v = sorted([x for x in vals if isinstance(x, (int,float))])
+        if not v:
+            return 0.0
+        n = len(v)
+        return float(v[n//2] if n % 2 == 1 else (v[n//2-1]+v[n//2])/2)
+
+    default_proxy = median(all_amounts) if all_amounts else 10000.0
+    WIN_RATE = 0.3
+    DURATION = 6
 
     opps: List[Dict[str, Any]] = []
     for m in masters:
         comps = [c.get("company_id") for c in m.get("companies", []) if c.get("company_id")]
         uniq = list({c for c in comps})
         if len(uniq) >= 2:
-            # shared account → candidate
-            rationale = "Shared buyer across companies"
-            expected_value = 12000
+            # compute avg peer spend in other companies
+            peer_spends: List[float] = []
+            for cid in uniq:
+                # consider deals in cid
+                for d in deals_by_company.get(cid, []):
+                    peer_spends.append(d.get("amount", 0))
+            avg_peer_spend = (sum(peer_spends)/len(peer_spends)) if peer_spends else default_proxy
+            expected_value = round(avg_peer_spend * WIN_RATE * DURATION)
             nba = "Introduce account owners across companies"
             opps.append({
+                "opportunity_id": str(uuid.uuid4()),
                 "master_id": m["master_id"],
+                "name": m.get("canonical_name",""),
                 "companies": uniq,
-                "rationale": rationale,
+                "rationale": "Shared buyer across companies",
                 "expected_value": expected_value,
-                "next_best_action": nba
+                "next_best_action": nba,
+                "status": "open",
+                "owner_user_id": None,
+                "notes": [],
+                "created_at": datetime.now(timezone.utc)
             })
 
     # Persist
     await db.cross_sell_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": opps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
-    await audit_log_entry(org_id, None, "crm_cross_sell", "crm", {"opps": len(opps)})
+    await audit_log_entry(org_id, ctx.user_id, "crm_cross_sell", "crm", {"opps": len(opps)})
     return {"ok": True, "opps": len(opps)}
 
 @api.get("/crm/dashboard")
