@@ -507,7 +507,11 @@ async def invite_member(org_id: str, payload: InviteRequest, ctx: RequestContext
 @api.post("/connections/xero/oauth/start")
 async def xero_oauth_start(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("ADMIN"))):
     # Return mock consent URL that redirects back to callback with state
+    org_id = body.get("org_id")
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
     state = str(uuid.uuid4())
+    await db.oauth_states.insert_one({"state": state, "org_id": org_id, "ts": datetime.now(timezone.utc)})
     return {"auth_url": f"/api/mock/xero/consent?state={state}"}
 
 @api.get("/mock/xero/consent")
