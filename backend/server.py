@@ -502,6 +502,131 @@ async def create_org(payload: OrgCreateRequest, user: dict = Depends(get_current
 async def invite_member(org_id: str, payload: InviteRequest, ctx: RequestContext = Depends(require_role("ADMIN"))):
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
+
+# --- Mock Xero OAuth + CSV ingest scaffolding (Day 1 prep) ---
+@api.post("/connections/xero/oauth/start")
+async def xero_oauth_start(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("ADMIN"))):
+    # Return mock consent URL that redirects back to callback with state
+    state = str(uuid.uuid4())
+    return {"auth_url": f"/api/mock/xero/consent?state={state}"}
+
+@api.get("/mock/xero/consent")
+async def mock_xero_consent(state: str, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    from fastapi.responses import HTMLResponse
+    html = f"""
+    <html><body style='font-family: sans-serif;'>
+    <h3>Mock Xero Consent</h3>
+    <p>State: {state}</p>
+    <a href='/api/connections/xero/oauth/callback?code=MOCK_CODE&state={state}'>Approve</a>
+    </body></html>
+    """
+    return HTMLResponse(content=html)
+
+@api.post("/connections/xero/oauth/callback")
+async def xero_callback(body: Dict[str, Any]):
+    # Store mock tokens encrypted under org_id from state mapping (for mock, accept org_id in body)
+    org_id = body.get("org_id")
+    code = body.get("code") or "MOCK_CODE"
+    tenant_id = "MOCK_TENANT_1"
+    if not org_id:
+        raise HTTPException(status_code=400, detail="org_id required in body for mock")
+    enc_access = aesgcm_encrypt_for_org(org_id, f"access::{code}")
+    enc_refresh = aesgcm_encrypt_for_org(org_id, f"refresh::{code}")
+    await db.connections.update_one(
+        {"org_id": org_id, "vendor": "xero"},
+        {"$set": {
+            "org_id": org_id,
+            "vendor": "xero",
+            "tenant_id": tenant_id,
+            "access_token_enc": enc_access,
+            "refresh_token_enc": enc_refresh,
+            "scopes": ["accounting.reports.read","accounting.transactions.read","accounting.settings.read","offline_access","openid","profile","email"],
+            "updated_at": datetime.now(timezone.utc)
+        }},
+        upsert=True
+    )
+    await audit_log_entry(org_id, None, "connect", "xero", {"tenant_id": tenant_id})
+    return {"connected": True, "tenant_id": tenant_id}
+
+@api.get("/companies/discover")
+async def companies_discover(org_id: str, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    # Return mock companies for now
+    return [
+        {"org_id": org_id, "company_id": "CO1", "name": "Acme UK", "xero_tenant_id": "MOCK_TENANT_1", "currency": "GBP"},
+        {"org_id": org_id, "company_id": "CO2", "name": "Acme US", "xero_tenant_id": "MOCK_TENANT_2", "currency": "USD"},
+    ]
+
+class CompaniesSelectBody(BaseModel):
+    org_id: str
+    companies: List[Dict[str, Any]]
+    base_currency: str = "GBP"
+    fx_source: str = "ECB"
+
+@api.post("/companies/select")
+async def companies_select(body: CompaniesSelectBody, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    if ctx.org_id != body.org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    for c in body.companies:
+        await db.companies.update_one(
+            {"org_id": body.org_id, "company_id": c["company_id"]},
+            {"$set": {**c, "org_id": body.org_id, "is_active": True}},
+            upsert=True
+        )
+    await audit_log_entry(body.org_id, ctx.user_id, "companies_select", "company", {"count": len(body.companies), "base": body.base_currency})
+    return {"ok": True}
+
+class FinanceRefreshBody(BaseModel):
+    org_id: str
+    _from: str | None = None
+    to: str | None = None
+
+@api.post("/ingest/finance/refresh")
+async def finance_refresh(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = body.get("org_id")
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    # Mock job and KPIs
+    job_id = str(uuid.uuid4())
+    await db.sync_jobs.insert_one({
+        "org_id": org_id, "job_id": job_id, "type": "finance", "status": "ok",
+        "started_at": datetime.now(timezone.utc), "finished_at": datetime.now(timezone.utc), "meta": body
+    })
+    # Write simple KPIs/synergy
+    await db.synergy_scores.update_one(
+        {"org_id": org_id, "period": "mock"},
+        {"$set": {"org_id": org_id, "company_id": None, "period": "mock", "s_fin": 72}},
+        upsert=True
+    )
+    await audit_log_entry(org_id, ctx.user_id, "finance_refresh", "ingest", {"job_id": job_id})
+    return {"job_id": job_id, "status": "ok"}
+
+@api.get("/dashboard/finance")
+async def dashboard_finance(org_id: str, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    score = await db.synergy_scores.find_one({"org_id": org_id}, {"_id": 0})
+    companies = await db.companies.find({"org_id": org_id, "is_active": True}, {"_id": 0}).to_list(50)
+    return {"companies": companies, "kpis": [{"name": "GM%", "value": 54.2}, {"name": "EBITDA", "value": 120000}], "score": (score or {}).get("s_fin", 0)}
+
+@api.get("/connections/status")
+async def connections_status(org_id: str, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    conn = await db.connections.find_one({"org_id": org_id, "vendor": "xero"}, {"_id": 0})
+    return {"xero": {"connected": bool(conn), "last_sync_at": (conn or {}).get("updated_at"), "tenants": [((conn or {}).get("tenant_id") or "")]}}
+
+# CSV ingest fallback (upload placeholder — for MVP provide JSON body with csv-like arrays)
+@api.post("/ingest/finance/csv")
+async def finance_csv(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = body.get("org_id")
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    await audit_log_entry(org_id, ctx.user_id, "finance_csv", "ingest", {"keys": list(body.keys())})
+    # Pretend we normalized and stored
+    return {"ok": True}
+
     email = payload.email.lower()
     role = payload.role
     invited_user = await db.users.find_one({"email": email}, {"_id": 0})
