@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend API Tests for Identity & Tenancy System
-Tests all authentication, organization, RBAC, and audit functionality
+Comprehensive Backend API Tests for Finance Dashboard System
+Tests CSV ingest, dashboard data, trends, export, RBAC, and onboarding functionality
 """
 
 import requests
 import json
 import sys
 import time
+import io
 from datetime import datetime
 from typing import Dict, Optional, List, Tuple
 
