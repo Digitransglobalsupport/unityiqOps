@@ -1782,7 +1782,7 @@ async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(re
     # Feature gate: exports must be enabled
     plan = await db.plans.find_one({"org_id": org_id}) or {}
     if not plan or not (plan.get("limits", {}).get("exports") or plan.get("tier") in ("LITE","PRO")):
-        raise HTTPException(status_code=403, detail="Exports disabled for plan")
+        raise HTTPException(status_code=403, detail={"code": "EXPORTS_NOT_ENABLED"})
 
     # Pull data for sections
     finance = await dashboard_finance(org_id, ctx)
