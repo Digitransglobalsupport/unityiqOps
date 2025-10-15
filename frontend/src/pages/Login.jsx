@@ -23,7 +23,7 @@ export default function Login() {
   return (
     <div className="max-w-md mx-auto mt-16 bg-white p-6 rounded shadow">
       <h1 className="text-xl font-semibold mb-4">Log In</h1>
-      <form onSubmit={onSubmit} className="space-y-3">
+      <form data-testid="login-form" onSubmit={onSubmit} className="space-y-3">
         <div>
           <label className="block text-sm mb-1">Email</label>
           <input data-testid="login-email" className="w-full border px-3 py-2 rounded" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
@@ -32,7 +32,7 @@ export default function Login() {
           <label className="block text-sm mb-1">Password</label>
           <input data-testid="login-password" type="password" className="w-full border px-3 py-2 rounded" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
         </div>
-        <button data-testid="login-submit-button" type="submit" className="w-full bg-black text-white py-2 rounded">Log in</button>
+        <button data-testid="login-submit" type="submit" className="w-full bg-black text-white py-2 rounded">Log in</button>
       </form>
       {error && <div data-testid="login-error" className="mt-3 text-sm text-red-600">{error}</div>}
       <div className="mt-4 text-sm">
