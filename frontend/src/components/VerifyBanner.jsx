@@ -9,7 +9,7 @@ export default function VerifyBanner({ show }) {
         <div className="text-sm">Please verify your email to continue. In dev, open Dev Emails to get the link.</div>
         <div className="flex items-center gap-2">
           <Link data-testid="verify-open-dev-emails" to="/dev/emails" className="text-sm px-3 py-1 bg-yellow-200 rounded">Open Dev Emails</Link>
-          <a data-testid="verify-resend" href="/api/auth/request-reset?type=verify" className="text-sm px-3 py-1 bg-yellow-200 rounded">Resend</a>
+          <button data-testid="verify-resend" onClick={async()=>{try{await fetch('/api/auth/request-verify',{method:'POST'}); alert('Verification email sent.');}catch(e){alert('Failed to send verification email');}}} className="text-sm px-3 py-1 bg-yellow-200 rounded">Resend verification</button>
         </div>
       </div>
     </div>
