@@ -630,7 +630,19 @@ async def dashboard_finance(org_id: str, ctx: RequestContext = Depends(require_r
         raise HTTPException(status_code=400, detail="Org mismatch")
     score = await db.synergy_scores.find_one({"org_id": org_id}, {"_id": 0})
     companies = await db.companies.find({"org_id": org_id, "is_active": True}, {"_id": 0}).to_list(50)
-    return {"companies": companies, "kpis": [{"name": "GM%", "value": 54.2}, {"name": "EBITDA", "value": 120000}], "score": (score or {}).get("s_fin", 0)}
+    # Fixture-like shape for MVP demo
+    return {
+        "org_id": org_id,
+        "period": {"from": "2025-07-01", "to": "2025-09-30"},
+        "last_sync_at": datetime.now(timezone.utc).isoformat(),
+        "score": {"s_fin": (score or {}).get("s_fin", 72), "weights": {"gm": 0.4, "opex": 0.4, "dso": 0.2}},
+        "kpis": {"revenue": 1250000, "gm_pct": 41.2, "opex": 520000, "ebitda": 230000, "dso_days": 47},
+        "companies": companies or [
+            {"company_id": "CO1", "name": "Alpha Ltd", "currency": "GBP", "kpis": {"revenue": 650000, "gm_pct": 44.0, "opex": 240000, "ebitda": 190000, "dso_days": 42}, "score": {"s_fin": 78}},
+            {"company_id": "CO2", "name": "Beta BV", "currency": "EUR", "kpis": {"revenue": 600000, "gm_pct": 38.5, "opex": 280000, "ebitda": 40000, "dso_days": 53}, "score": {"s_fin": 65}}
+        ],
+        "data_health": {"stale_days": 0, "missing_fields": [], "warnings": []}
+    }
 
 @api.get("/connections/status")
 async def connections_status(org_id: str, ctx: RequestContext = Depends(require_role("VIEWER"))):
