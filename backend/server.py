@@ -469,6 +469,40 @@ async def invite_member(org_id: str, payload: InviteRequest, ctx: RequestContext
     )
     await audit_log_entry(org_id, ctx.user_id, "invite", "membership", {"email": email, "role": role})
     return {"message": "Invitation sent"}
+@api.post("/invites/accept")
+async def accept_invite(payload: VerifyEmailRequest, ctx_user: dict = Depends(get_current_user)):
+    # token contains org_id and email (invited)
+    try:
+        data = decode_jwt(payload.token)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    if data.get("typ") != "invite":
+        raise HTTPException(status_code=400, detail="Invalid token type")
+    org_id = data.get("org_id")
+    invited_email = (data.get("email") or "").lower()
+    if ctx_user.get("email") != invited_email:
+        raise HTTPException(status_code=403, detail="Token email mismatch")
+    # find pending membership
+    pending = await db.memberships.find_one({"org_id": org_id, "invited_email": invited_email, "status": "INVITED"})
+    if not pending:
+        # if not pending, maybe already active
+        existing = await db.memberships.find_one({"org_id": org_id, "user_id": ctx_user["user_id"]})
+        if existing:
+            return {"message": "Already a member"}
+        raise HTTPException(status_code=404, detail="Invite not found")
+    await db.memberships.update_one({"membership_id": pending["membership_id"]}, {"$set": {"user_id": ctx_user["user_id"], "status": "ACTIVE"}})
+    await audit_log_entry(org_id, ctx_user["user_id"], "accept_invite", "membership", {"membership_id": pending["membership_id"]})
+    return {"message": "Invite accepted"}
+
+@api.get("/orgs/{org_id}/members")
+async def list_members(org_id: str, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    members = await db.memberships.find({"org_id": org_id}, {"_id": 0}).to_list(200)
+    return members
+
 
 @api.patch("/members/{membership_id}")
 async def patch_member_role(membership_id: str, payload: MemberRolePatch, ctx: RequestContext = Depends(require_role("ADMIN"))):
