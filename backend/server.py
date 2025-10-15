@@ -609,6 +609,32 @@ async def get_sync_job(job_id: str, ctx: RequestContext = Depends(require_role("
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
+
+@api.get("/dashboard/finance/trends")
+async def finance_trends(org_id: str, periods: int = 6, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    # Generate mock monthly series for last N periods
+    now = datetime.now(timezone.utc)
+    months = []
+    y, m = now.year, now.month
+    for i in range(periods, 0, -1):
+        mm = m - (periods - i)
+        yy = y
+        while mm <= 0:
+            mm += 12
+            yy -= 1
+        months.append(f"{yy}-{mm:02d}")
+    def mk(points):
+        return [[months[i], v] for i, v in enumerate(points)]
+    series = [
+        {"kpi": "revenue", "points": mk([410000,420000,390000,410000,420000,420000][:periods])},
+        {"kpi": "gm_pct", "points": mk([39.1,40.2,38.8,41.0,41.5,41.2][:periods])},
+        {"kpi": "opex", "points": mk([210000,215000,205000,208000,210000,212000][:periods])},
+        {"kpi": "dso_days", "points": mk([56,54,59,51,48,47][:periods])},
+    ]
+    return {"org_id": org_id, "series": series}
+
     # Mock job and KPIs
     job_id = str(uuid.uuid4())
     await db.sync_jobs.insert_one({
