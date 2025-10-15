@@ -520,7 +520,7 @@ def main():
                     "users": tester.users,
                     "orgs": tester.orgs
                 }
-            }, indent=2)
+            }, f, indent=2)
         
         return 0 if success else 1
         
