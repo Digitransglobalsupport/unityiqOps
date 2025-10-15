@@ -804,7 +804,7 @@ class FinanceDashboardTester:
 
 def main():
     """Main test execution"""
-    tester = IdentityTenancyTester()
+    tester = FinanceDashboardTester()
     
     try:
         success = tester.run_comprehensive_tests()
