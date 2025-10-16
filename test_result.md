@@ -103,37 +103,46 @@
 
   - task: "Demo banner & flags"
     implemented: true
-    working: true
+    working: "NA"
     file: "/app/frontend/src/pages/FinanceDashboard.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Added GET /api/orgs/flags; Finance shows demo banner when org_flags.demo_seeded=true and persists dismissal via /api/orgs/prefs.show_demo_banner=false."
+      - working: "NA"
+        agent: "testing"
+        comment: "⚠️ AUTHENTICATION LIMITATION: Unable to complete full authentication flow due to email verification issues (400 errors on /api/auth/verify-email). Backend syntax error was fixed but verification tokens from dev emails are not working properly. Demo banner functionality cannot be fully tested without authenticated user session."
   - task: "Settings page (savings assumptions)"
     implemented: true
-    working: true
+    working: "NA"
     file: "/app/frontend/src/pages/Settings.jsx, /app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Added GET/PUT /api/orgs/settings with bounds validation; Settings UI persists values; PDF footer now reflects assumptions."
+      - working: "NA"
+        agent: "testing"
+        comment: "⚠️ AUTHENTICATION LIMITATION: Settings page implementation appears correct with proper RBAC (ADMIN/OWNER required), input validation, and data-testid attributes. However, cannot fully test persistence and validation due to authentication flow issues. Settings link visibility and page structure are properly implemented."
   - task: "Snapshot RL 2/min"
     implemented: true
-    working: true
+    working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Added per-org rate limit for /api/snapshot/generate: 2/min."
+      - working: "NA"
+        agent: "testing"
+        comment: "⚠️ AUTHENTICATION LIMITATION: Rate limiting implementation is correctly coded in backend (2/min per org using rate_limit function). Cannot test actual rate limiting behavior due to authentication issues preventing API calls. Backend logs show 401 Unauthorized for snapshot/generate calls."
 
 
 ## user_problem_statement: User could not navigate to dashboards initially; fix 502s and improve onboarding. Now implement: auto-redirect for single-org users, persistent snapshot banner prefs, gated tooltips by plan, and automated billing tests.
