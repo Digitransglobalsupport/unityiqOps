@@ -270,6 +270,7 @@ export default function FinanceDashboard() {
     fetchData();
     loadEntitlements();
     loadPrefs();
+    loadFlags();
     // eslint-disable-next-line
   }, [currentOrgId]);
 
