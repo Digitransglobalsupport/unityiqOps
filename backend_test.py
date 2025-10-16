@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Comprehensive Backend API Tests for Finance Dashboard System
-Tests CSV ingest, dashboard data, trends, export, RBAC, and onboarding functionality
+Tests CSV ingest, dashboard data, trends, export, RBAC, onboarding, and billing functionality
 """
 
 import requests
@@ -9,6 +9,9 @@ import json
 import sys
 import time
 import io
+import hmac
+import hashlib
+import base64
 from datetime import datetime
 from typing import Dict, Optional, List, Tuple
 
