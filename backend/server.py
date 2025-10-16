@@ -1459,6 +1459,12 @@ async def get_plan(org_id: str, ctx: RequestContext = Depends(require_role("VIEW
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
     plan = await db.plans.find_one({"org_id": org_id}, {"_id": 0})
+
+@api.get("/billing/public-key")
+async def billing_public_key():
+    # helper if frontend ever needs publishable key in future
+    return {"publishable_key": STRIPE_PUBLIC_KEY}
+
     ent = await db.entitlements.find_one({"org_id": org_id}, {"_id": 0})
     return {"plan": plan, "entitlements": ent}
 
