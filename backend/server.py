@@ -1493,20 +1493,24 @@ async def billing_webhook(request: Request, stripe_signature: str = Header(None)
         event = stripe.Webhook.construct_event(payload=payload, sig_header=stripe_signature, secret=STRIPE_WEBHOOK_SECRET)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid signature")
-    if event["type"] == "checkout.session.completed":
+    if event.get("type") == "checkout.session.completed":
         data = event["data"]["object"]
         meta = data.get("metadata", {})
         org_id = meta.get("org_id")
         plan = meta.get("plan")
-        if org_id and plan == "LITE":
+        # Hard check: metadata.org_id must exist and belong to a known org
+        if not org_id:
+            return {"ok": True}
+        exists_org = await db.orgs.find_one({"org_id": org_id})
+        if not exists_org:
+            return {"ok": True}
+        if plan == "LITE":
             # idempotency on event id
             eid = event.get("id")
             exists = await db.billing_events.find_one({"stripe_id": eid})
             if not exists:
-                # Mark plan LITE by default for this checkout. Extend to PRO if/when we sell it.
                 await db.plans.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "tier": "LITE", "limits": {"companies":3, "connectors":1, "exports": True, "alerts": True}, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
                 await db.entitlements.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "snapshot_enabled": True, "activated_at": datetime.now(timezone.utc)}}, upsert=True)
-                # Auto-hide snapshot banner upon successful purchase
                 await db.orgs.update_one({"org_id": org_id}, {"$set": {"ui_prefs": {"show_snapshot_banner": False}}}, upsert=True)
                 await db.billing_events.insert_one({"org_id": org_id, "type": "checkout.session.completed", "stripe_id": eid, "amount": data.get("amount_total"), "currency": data.get("currency"), "ts": datetime.now(timezone.utc)})
     return {"ok": True}
