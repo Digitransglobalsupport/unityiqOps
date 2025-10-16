@@ -1557,7 +1557,15 @@ async def billing_webhook(request: Request, stripe_signature: str = Header(None)
                 await db.plans.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "tier": "LITE", "limits": {"companies":3, "connectors":1, "exports": True, "alerts": True}, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
                 await db.entitlements.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "snapshot_enabled": True, "activated_at": datetime.now(timezone.utc)}}, upsert=True)
                 await db.orgs.update_one({"org_id": org_id}, {"$set": {"ui_prefs": {"show_snapshot_banner": False}}}, upsert=True)
-                await db.billing_events.insert_one({"org_id": org_id, "type": "checkout.session.completed", "stripe_id": eid, "amount": data.get("amount_total"), "currency": data.get("currency"), "ts": datetime.now(timezone.utc)})
+                # capture payment_intent/receipt_url if present
+                pi = data.get("payment_intent")
+                receipt = None
+                try:
+                    if data.get("payment_link") and hasattr(data.get("payment_link"), 'receipt_url'):
+                        receipt = data.get("payment_link").get("receipt_url")
+                except Exception:
+                    pass
+                await db.billing_events.insert_one({"org_id": org_id, "type": "checkout.session.completed", "stripe_id": eid, "amount": data.get("amount_total"), "currency": data.get("currency"), "payment_intent": pi, "receipt_url": receipt, "ts": datetime.now(timezone.utc)})
     return {"ok": True}
 
 @api.get("/orgs/flags")
