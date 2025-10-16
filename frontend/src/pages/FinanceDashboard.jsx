@@ -7,12 +7,33 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/comp
 
 function SynergyGauge({ score, weights, drivers }) {
   const pct = Math.max(0, Math.min(100, Number(score || 0)));
-  const tooltip = `Weights: gm ${weights?.gm ?? 0}, opex ${weights?.opex ?? 0}, dso ${weights?.dso ?? 0}\nDrivers: gmΔ ${drivers?.gm_delta_pct ?? '-'}pp, opexΔ ${drivers?.opex_delta_pct ?? '-'}pp, dsoΔ ${drivers?.dso_delta_days ?? '-'} days`;
+  const [open, setOpen] = useState(false);
   return (
-    <div data-testid="synergy-gauge" className="p-4 border rounded bg-white" title={tooltip}>
-      <div className="text-sm text-gray-600">Synergy Score (Finance)</div>
-      <div className="text-4xl font-bold">{pct}</div>
-      <div className="text-xs text-gray-500">Why {pct}? Hover for details.</div>
+    <div className="p-4 border rounded bg-white" data-testid="synergy-gauge">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-sm text-gray-600">Synergy Score (Finance)</div>
+          <div className="text-4xl font-bold">{pct}</div>
+        </div>
+        <button data-testid="score-drivers-trigger" className="text-xs underline" onClick={()=>setOpen(o=>!o)}>Why this score?</button>
+      </div>
+      {open && (
+        <div data-testid="score-drivers-panel" className="mt-2 text-xs text-gray-700 border rounded p-2 bg-gray-50">
+          {drivers ? (
+            <div className="space-y-1">
+              <div>Weights: gm {weights?.gm ?? 0}, opex {weights?.opex ?? 0}, dso {weights?.dso ?? 0}</div>
+              <div>Drivers: gmΔ {drivers?.gm_delta_pct ?? '-'}pp, opexΔ {drivers?.opex_delta_pct ?? '-'}pp, dsoΔ {drivers?.dso_delta_days ?? '-'} days</div>
+              {(drivers?.notes||[]).length>0 && (
+                <ul className="list-disc ml-5">
+                  {drivers.notes.map((n,i)=>(<li key={i}>{n}</li>))}
+                </ul>
+              )}
+            </div>
+          ) : (
+            <div>No driver details available yet.</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
