@@ -1508,6 +1508,45 @@ async def billing_webhook(request: Request, stripe_signature: str = Header(None)
                 await db.billing_events.insert_one({"org_id": org_id, "type": "checkout.session.completed", "stripe_id": eid, "amount": data.get("amount_total"), "currency": data.get("currency"), "ts": datetime.now(timezone.utc)})
     return {"ok": True}
 
+
+# --- Org UI Preferences ---
+class OrgPrefsPut(BaseModel):
+    ui_prefs: Dict[str, Any]
+
+@api.get("/orgs/prefs")
+async def get_org_prefs(ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    org = await db.orgs.find_one({"org_id": ctx.org_id}, {"_id": 0, "ui_prefs": 1}) or {}
+    prefs = org.get("ui_prefs") or {"show_snapshot_banner": True}
+    # ensure default
+    if "show_snapshot_banner" not in prefs:
+        prefs["show_snapshot_banner"] = True
+    return {"ui_prefs": prefs}
+
+@api.put("/orgs/prefs")
+async def put_org_prefs(payload: OrgPrefsPut, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    prefs = payload.ui_prefs or {}
+    await db.orgs.update_one({"org_id": ctx.org_id}, {"$set": {"ui_prefs": {"show_snapshot_banner": bool(prefs.get("show_snapshot_banner", True))}, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(ctx.org_id, ctx.user_id, "put", "org_prefs", {"ui_prefs": prefs})
+    return {"ok": True}
+
+# --- Billing Entitlements ---
+@api.get("/billing/entitlements")
+async def billing_entitlements(ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    limits = await get_plan_limits(ctx.org_id)
+    plan = {"tier": limits.get("tier", "FREE")}
+    limits_out = {"companies": limits.get("companies", 1), "connectors": limits.get("connectors", 0), "exports": bool(limits.get("exports", False)), "alerts": bool(limits.get("alerts", False))}
+    usage = {
+        "companies": await db.companies.count_documents({"org_id": ctx.org_id, "is_active": True}),
+        "connectors": await db.connections.count_documents({"org_id": ctx.org_id})
+    }
+    return {"plan": plan, "limits": limits_out, "usage": usage}
+
 # NOTE: The block below was incorrectly appended due to a prior edit; cleaning up to fix indentation/syntax.
     try:
         settings = await db.org_settings.find_one({"org_id": org_id}) or {}
