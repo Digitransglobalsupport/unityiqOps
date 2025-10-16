@@ -58,6 +58,8 @@ function SnapshotBanner({ entitlements, prefs, onDismiss }) {
       <div className="text-xs text-gray-700 mt-1">You can dismiss this anytime in Settings.</div>
     </div>
   );
+}
+
 
 function DemoBanner({ flags, prefs, onDismiss }) {
   const show = (flags?.demo_seeded === true) && (prefs?.show_demo_banner ?? true);
