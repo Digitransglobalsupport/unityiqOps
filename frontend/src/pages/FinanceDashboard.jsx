@@ -133,34 +133,6 @@ function CompaniesTable({ companies }) {
       <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Bottom 30%</span>
     );
   };
-}
-
-function Sparkline({ id, points, label }) {
-  if (!points || points.length < 2) return <div className="text-xs text-gray-500">Not enough data</div>;
-  const labels = points.map(p=>p[0]);
-  const data = points.map(p=>Number(p[1]||0));
-  const ds = {
-    labels,
-    datasets:[{
-      data,
-      borderColor: '#111827',
-      backgroundColor: 'rgba(17,24,39,0.1)',
-      borderWidth: 1,
-      pointRadius: 0,
-      tension: 0.3,
-    }]
-  };
-  const options = {
-    responsive:true,
-    maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{enabled:true, intersect:false}},
-    scales:{x:{display:false},y:{display:false}}
-  };
-  return <div data-testid={`kpi-sparkline-${id}`} className="h-10"><Line data={ds} options={options} /></div>;
-}
-
-    );
-  };
   const list = [...(companies || [])].sort((a, b) => (b?.score?.s_fin || 0) - (a?.score?.s_fin || 0));
   return (
     <div data-testid="companies-table" className="border rounded bg-white">
@@ -196,6 +168,30 @@ function Sparkline({ id, points, label }) {
       </table>
     </div>
   );
+}
+
+function Sparkline({ id, points, label }) {
+  if (!points || points.length < 2) return <div className="text-xs text-gray-500">Not enough data</div>;
+  const labels = points.map(p=>p[0]);
+  const data = points.map(p=>Number(p[1]||0));
+  const ds = {
+    labels,
+    datasets:[{
+      data,
+      borderColor: '#111827',
+      backgroundColor: 'rgba(17,24,39,0.1)',
+      borderWidth: 1,
+      pointRadius: 0,
+      tension: 0.3,
+    }]
+  };
+  const options = {
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{enabled:true, intersect:false}},
+    scales:{x:{display:false},y:{display:false}}
+  };
+  return <div data-testid={`kpi-sparkline-${id}`} className="h-10"><Line data={ds} options={options} /></div>;
 }
 
 function DataHealth({ health, lastSyncAt }) {
