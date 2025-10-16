@@ -1149,7 +1149,27 @@ class FinanceDashboardTester:
         # Test onboarding flow (ADMIN/OWNER can access)
         self.test_onboarding_flow(owner_email, org_name)
         
-        print("\n📊 PHASE 6: Audit & Context Tests")
+        print("\n💳 PHASE 6: Billing & Entitlements Tests")
+        print("-" * 40)
+        
+        # Test FREE plan entitlements
+        self.test_billing_entitlements_free(viewer_email, org_name)
+        
+        # Test export gating on FREE plan
+        self.test_export_gating_free(viewer_email, org_name)
+        
+        # Test billing checkout (OWNER only)
+        checkout_url = self.test_billing_checkout(owner_email, org_name)
+        
+        # Test webhook upgrade simulation
+        if checkout_url:
+            webhook_success = self.test_billing_webhook_upgrade(org_name)
+            
+            # Test exports work after upgrade
+            if webhook_success:
+                self.test_export_allowed_after_upgrade(viewer_email, org_name)
+        
+        print("\n📊 PHASE 7: Audit & Context Tests")
         print("-" * 40)
         
         # Test audit logs
