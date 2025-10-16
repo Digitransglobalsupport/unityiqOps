@@ -1603,6 +1603,27 @@ async def billing_entitlements(ctx: RequestContext = Depends(require_role("VIEWE
     return {"plan": plan, "limits": limits_out, "usage": usage}
 
 # NOTE: The block below was incorrectly appended due to a prior edit; cleaning up to fix indentation/syntax.
+
+# --- Demo Seed ---
+@api.post("/demo/seed")
+async def demo_seed(ctx: RequestContext = Depends(require_role("ADMIN"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    org_id = ctx.org_id
+    now = datetime.now(timezone.utc)
+    # Seed minimal finance KPIs
+    await db.synergy_scores.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "period": "demo", "s_fin": 75}}, upsert=True)
+    await db.companies.update_one({"org_id": org_id, "company_id": "CO1"}, {"$set": {"org_id": org_id, "company_id": "CO1", "name": "DemoCo Ltd", "currency": "GBP", "is_active": True, "kpis": {"revenue": 650000, "gm_pct": 42.0, "opex": 240000, "ebitda": 180000, "dso_days": 45}, "score": {"s_fin": 75}, "percentile": 80}}, upsert=True)
+    # Seed minimal CRM
+    await db.customer_master.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": [{"master_id": str(uuid.uuid4()), "canonical_name": "Alpha Buyer", "emails": ["alpha@demo.co"], "domains": ["demo.co"], "companies": [{"company_id": "CO1", "crm": "hubspot"}], "confidence": 0.9, "review_state": "auto"}], "updated_at": now}}, upsert=True)
+    await db.cross_sell_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": [{"opportunity_id": str(uuid.uuid4()), "master_id": "M1", "name": "Cross-sell Alpha", "companies": ["CO1"], "expected_value": 12000, "next_best_action": "Intro", "status": "open", "owner_user_id": None, "notes": [], "created_at": now}] }}, upsert=True)
+    # Seed minimal Vendors
+    await db.vendor_master.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": [{"vendor_id": "VN-demosaas", "canonical_name": "Demo SaaS", "companies": ["CO1"], "category": "SaaS", "annual_spend": 18000}], "updated_at": now}}, upsert=True)
+    await db.savings_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": [{"opportunity_id": str(uuid.uuid4()), "type": "Consolidation", "vendors": ["Demo SaaS"], "companies": ["CO1"], "category": "SaaS", "est_saving": 2700, "status": "open", "owner_user_id": None, "notes": [], "playbook_step": "Consolidate seats", "evidence": {"annual_spend": 18000, "calc": "15%"}, "created_at": now, "updated_at": now}] }}, upsert=True)
+    await db.orgs.update_one({"org_id": org_id}, {"$set": {"ui_prefs": {"show_snapshot_banner": True, "demo_loaded": True}}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "seed", "demo", {})
+    return {"ok": True}
+
     try:
         settings = await db.org_settings.find_one({"org_id": org_id}) or {}
         webhook = settings.get("slack_webhook_url")
