@@ -211,7 +211,8 @@ export default function FinanceDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [entitlements, setEntitlements] = useState(null);
-  const [prefs, setPrefs] = useState({ show_snapshot_banner: true });
+  const [prefs, setPrefs] = useState({ show_snapshot_banner: true, show_demo_banner: true });
+  const [orgFlags, setOrgFlags] = useState({ demo_seeded: false });
   const [alertsMsg, setAlertsMsg] = useState("");
 
   const fetchData = async () => {
