@@ -1661,6 +1661,8 @@ class SnapshotBody(BaseModel):
 
 @api.post("/snapshot/generate")
 async def snapshot_generate(body: SnapshotBody, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    # per-org snapshot rate limit (2/min)
+    rate_limit(f"snapshot:{ctx.org_id}", SNAPSHOT_RATE_LIMIT, 60)
     if ctx.org_id != body.org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
     limits = await get_plan_limits(body.org_id)
