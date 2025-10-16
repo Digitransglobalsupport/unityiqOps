@@ -1,0 +1,32 @@
+{
+  "summary": {
+    "total_tests": 3,
+    "passed_tests": 0,
+    "success_rate": 0.0
+  },
+  "detailed_results": [
+    {
+      "test": "Webhook: Missing Signature Header",
+      "success": false,
+      "details": "Expected 400, got None: {'error': \"HTTPSConnectionPool(host='multi-tenant-dash-4.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)\"}",
+      "timestamp": "2025-10-16T12:59:33.736060"
+    },
+    {
+      "test": "Webhook: Invalid Signature",
+      "success": false,
+      "details": "Expected 400, got None: {'error': \"HTTPSConnectionPool(host='multi-tenant-dash-4.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)\"}",
+      "timestamp": "2025-10-16T13:00:03.825770"
+    },
+    {
+      "test": "Auth: Signup",
+      "success": false,
+      "details": "Signup failed: {'error': \"HTTPSConnectionPool(host='multi-tenant-dash-4.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)\"}",
+      "timestamp": "2025-10-16T13:00:33.921020"
+    }
+  ],
+  "test_data": {
+    "user_email": "stripe_test_1760619603@example.com",
+    "org_id": null,
+    "access_token": null
+  }
+}
