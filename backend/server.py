@@ -1571,10 +1571,12 @@ async def get_org_prefs(ctx: RequestContext = Depends(require_role("VIEWER"))):
     if not ctx.org_id:
         raise HTTPException(status_code=400, detail="No org selected")
     org = await db.orgs.find_one({"org_id": ctx.org_id}, {"_id": 0, "ui_prefs": 1}) or {}
-    prefs = org.get("ui_prefs") or {"show_snapshot_banner": True}
-    # ensure default
+    prefs = org.get("ui_prefs") or {}
+    # defaults
     if "show_snapshot_banner" not in prefs:
         prefs["show_snapshot_banner"] = True
+    if "demo_loaded" not in prefs:
+        prefs["demo_loaded"] = False
     return {"ui_prefs": prefs}
 
 @api.put("/orgs/prefs")
