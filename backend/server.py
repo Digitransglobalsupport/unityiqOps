@@ -1535,6 +1535,17 @@ async def billing_webhook(request: Request, stripe_signature: str = Header(None)
         plan = meta.get("plan")
         # Hard check: metadata.org_id must exist and belong to a known org
         if not org_id:
+
+@api.get("/orgs/flags")
+async def get_org_flags(ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    org = await db.orgs.find_one({"org_id": ctx.org_id}, {"_id": 0, "org_flags": 1}) or {}
+    flags = org.get("org_flags") or {"demo_seeded": False}
+    if "demo_seeded" not in flags:
+        flags["demo_seeded"] = False
+    return {"org_flags": flags}
+
             return {"ok": True}
         exists_org = await db.orgs.find_one({"org_id": org_id})
         if not exists_org:
