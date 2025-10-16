@@ -216,6 +216,29 @@ function CustomerLensCard({ lens }) {
           Cross-sell: <span className="font-semibold">{lens.cross_sell_count}</span>
         </div>
         <div>
+      <div className="border rounded bg-white p-3">
+        <div className="text-sm font-medium mb-2">Trends</div>
+        <TrendsCharts series={data?.series} />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+          <div>
+            <div className="text-xs text-gray-600 mb-1">Revenue</div>
+            <Sparkline id="revenue" points={(data?.trends||[]).find(s=>s.kpi==='revenue')?.points || []} label="Revenue" />
+          </div>
+          <div>
+            <div className="text-xs text-gray-600 mb-1">GM%</div>
+            <Sparkline id="gm_pct" points={(data?.trends||[]).find(s=>s.kpi==='gm_pct')?.points || []} label="GM%" />
+          </div>
+          <div>
+            <div className="text-xs text-gray-600 mb-1">OPEX</div>
+            <Sparkline id="opex" points={(data?.trends||[]).find(s=>s.kpi==='opex')?.points || []} label="OPEX" />
+          </div>
+          <div>
+            <div className="text-xs text-gray-600 mb-1">DSO</div>
+            <Sparkline id="dso_days" points={(data?.trends||[]).find(s=>s.kpi==='dso_days')?.points || []} label="DSO" />
+          </div>
+        </div>
+      </div>
+
           EV: <span className="font-semibold">£{lens.cross_sell_value}</span>
         </div>
       </div>
