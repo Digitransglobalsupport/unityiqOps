@@ -1,32 +1,92 @@
 {
   "summary": {
-    "total_tests": 3,
-    "passed_tests": 0,
-    "success_rate": 0.0
+    "total_tests": 13,
+    "passed_tests": 6,
+    "success_rate": 46.15384615384615
   },
   "detailed_results": [
     {
       "test": "Webhook: Missing Signature Header",
       "success": false,
-      "details": "Expected 400, got None: {'error': \"HTTPSConnectionPool(host='multi-tenant-dash-4.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)\"}",
-      "timestamp": "2025-10-16T12:59:33.736060"
+      "details": "Expected 400, got 200: {'ok': True, 'actual_status': 200, 'expected_status': 400}",
+      "timestamp": "2025-10-16T13:04:41.198904"
     },
     {
       "test": "Webhook: Invalid Signature",
       "success": false,
-      "details": "Expected 400, got None: {'error': \"HTTPSConnectionPool(host='multi-tenant-dash-4.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)\"}",
-      "timestamp": "2025-10-16T13:00:03.825770"
+      "details": "Expected 400, got 200: {'ok': True, 'actual_status': 200, 'expected_status': 400}",
+      "timestamp": "2025-10-16T13:04:41.201341"
     },
     {
       "test": "Auth: Signup",
+      "success": true,
+      "details": "User stripe_test_1760619881@example.com created successfully",
+      "timestamp": "2025-10-16T13:04:41.480819"
+    },
+    {
+      "test": "Auth: Verification Email",
+      "success": true,
+      "details": "Verification email found",
+      "timestamp": "2025-10-16T13:04:42.489254"
+    },
+    {
+      "test": "Auth: Email Verification",
+      "success": true,
+      "details": "Email verified successfully",
+      "timestamp": "2025-10-16T13:04:42.498025"
+    },
+    {
+      "test": "Auth: Login",
+      "success": true,
+      "details": "Login successful, token captured",
+      "timestamp": "2025-10-16T13:04:42.725469"
+    },
+    {
+      "test": "Auth: Create Org",
+      "success": true,
+      "details": "Org created with ID: 979d09ef-ac14-4211-a065-5d9c5b75fa6b",
+      "timestamp": "2025-10-16T13:04:42.742881"
+    },
+    {
+      "test": "Export Gate: Before Upgrade",
+      "success": true,
+      "details": "Correctly blocked with EXPORTS_NOT_ENABLED",
+      "timestamp": "2025-10-16T13:04:42.941958"
+    },
+    {
+      "test": "Checkout: Creation",
       "success": false,
-      "details": "Signup failed: {'error': \"HTTPSConnectionPool(host='multi-tenant-dash-4.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)\"}",
-      "timestamp": "2025-10-16T13:00:33.921020"
+      "details": "STRIPE_SECRET_KEY not configured in environment",
+      "timestamp": "2025-10-16T13:04:42.945217"
+    },
+    {
+      "test": "Webhook Simulation: Stripe CLI",
+      "success": false,
+      "details": "Requires operator to trigger via Stripe CLI - not available to test agent",
+      "timestamp": "2025-10-16T13:04:42.945262"
+    },
+    {
+      "test": "Webhook Simulation: Unexpected Response",
+      "success": false,
+      "details": "Unexpected status: {'ok': True}",
+      "timestamp": "2025-10-16T13:04:42.946886"
+    },
+    {
+      "test": "Export After Upgrade: Skipped",
+      "success": false,
+      "details": "Skipped due to webhook simulation failure",
+      "timestamp": "2025-10-16T13:04:42.946906"
+    },
+    {
+      "test": "Re-checkout Guard: Skipped",
+      "success": false,
+      "details": "Skipped due to webhook simulation failure",
+      "timestamp": "2025-10-16T13:04:42.946912"
     }
   ],
   "test_data": {
-    "user_email": "stripe_test_1760619603@example.com",
-    "org_id": null,
-    "access_token": null
+    "user_email": "stripe_test_1760619881@example.com",
+    "org_id": "979d09ef-ac14-4211-a065-5d9c5b75fa6b",
+    "access_token": "eyJhbGciOiJIUzI1NiIs..."
   }
 }
