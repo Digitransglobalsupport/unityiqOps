@@ -86,8 +86,18 @@ export default function OnboardingWizard() {
   const connectorsAvailable = Math.max(0, connectorsLimit - connectorsUsed);
   const connectorsDisabled = connectorsLimit === 0 || connectorsAvailable <= 0;
   const connectorsTooltip = connectorsLimit === 0
-    ? "Connectors aren’t available on Free. Upgrade to Lite/Pro."
-    : "Connector limit reached on Lite. Upgrade to Pro for more.";
+    ? (
+      <div className="space-y-1">
+        <div>Connectors aren’t available on Free. Upgrade to Lite/Pro.</div>
+        <div><a className="underline" href="#" onClick={async (e)=>{ e.preventDefault(); try{ const { data } = await api.post('/billing/checkout', { org_id: currentOrgId, plan: 'LITE' }); window.location.href = data.url; }catch{}}}>Upgrade now</a></div>
+      </div>
+    )
+    : (
+      <div className="space-y-1">
+        <div>Connector limit reached on Lite. Upgrade to Pro for more.</div>
+        <div><a className="underline" href="/contact">Explore Pro</a></div>
+      </div>
+    );
 
   const connectXero = async () => {
     setLoading(true); setError("");
