@@ -279,9 +279,9 @@
 
 ## test_plan:
   current_focus:
-    - "All high priority tasks completed and tested"
+    - "Stripe webhook signature validation security fix"
   stuck_tasks:
-    - "None"
+    - "Stripe webhook signature validation"
   test_all: false
   test_priority: "high_first"
 
