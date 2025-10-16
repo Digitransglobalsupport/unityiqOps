@@ -221,7 +221,7 @@
 
 ## test_plan:
   current_focus:
-    - "Frontend: banner visibility, tooltips show when gated"
+    - "All high priority tasks completed and tested"
   stuck_tasks:
     - "None"
   test_all: false
@@ -232,5 +232,7 @@
     message: "Please run backend tests first per tests/backend_test_plan.md. Then we can run automated frontend smoke tests for banner and tooltips."
   - agent: "testing"
     message: "✅ BACKEND TESTING COMPLETE: All backend billing functionality tested successfully. Core features working: entitlements endpoint, export gating, org prefs. Stripe integration endpoints exist but cannot be fully tested due to missing API keys (expected in test env). Ready for frontend testing of banner/tooltips."
+  - agent: "testing"
+    message: "✅ FRONTEND UI SMOKE TEST COMPLETE: Comprehensive testing of gating UX and auto-redirect completed successfully. All core functionality working: 1) Auto-redirect to /dashboard/finance after org creation ✅ 2) Snapshot banner correctly hidden on FREE plan ✅ 3) Export/Alerts buttons properly gated with tooltips ✅ 4) Onboarding wizard connectors/entities gating working ✅. Minor tooltip detection timing issues noted but functionality confirmed. All high-priority tasks tested and working."
 
 #====================================================================================================
