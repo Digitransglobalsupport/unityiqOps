@@ -58,6 +58,22 @@ function SnapshotBanner({ entitlements, prefs, onDismiss }) {
       <div className="text-xs text-gray-700 mt-1">You can dismiss this anytime in Settings.</div>
     </div>
   );
+
+function DemoBanner({ flags, prefs, onDismiss }) {
+  const show = (flags?.demo_seeded === true) && (prefs?.show_demo_banner ?? true);
+  if (!show) return null;
+  return (
+    <div className="border rounded bg-blue-50 p-3" data-testid="demo-banner">
+      <div className="text-sm">Demo data loaded—replace with real connections anytime.</div>
+      <div className="mt-2 flex gap-2">
+        <a data-testid="view-sample-report" href="#" onClick={(e)=>{ e.preventDefault(); const btn = document.querySelector('[data-testid="export-snapshot"]'); if(btn) btn.click(); }} className="px-3 py-1 rounded bg-blue-600 text-white">View Sample Report</a>
+        <a data-testid="connect-real-data" href="/onboarding" className="px-3 py-1 rounded border">Connect real data</a>
+        <button data-testid="demo-dismiss" onClick={onDismiss} className="px-3 py-1 rounded border">Dismiss</button>
+      </div>
+    </div>
+  );
+}
+
 }
 
 function KpiCards({ kpis }) {
