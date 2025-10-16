@@ -242,7 +242,14 @@ export default function FinanceDashboard() {
   };
 
   const exportDisabled = entitlements && !entitlements?.limits?.exports;
-  const exportTooltip = "Exports are available on Lite and Pro.";
+  const exportTooltip = (
+    <div className="space-y-1">
+      <div>Exports are available on Lite and Pro.</div>
+      <div>
+        <a className="underline" href="#" onClick={async (e)=>{ e.preventDefault(); try{ const { data } = await api.post('/billing/checkout', { org_id: currentOrgId, plan: 'LITE' }); window.location.href = data.url; }catch{}}}>Upgrade now</a>
+      </div>
+    </div>
+  );
 
   const sendTestAlert = async () => {
     setAlertsMsg("");
