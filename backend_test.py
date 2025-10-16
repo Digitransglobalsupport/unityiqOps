@@ -94,7 +94,7 @@ class FinanceDashboardTester:
 
     def get_dev_emails(self) -> List[Dict]:
         """Get dev emails for verification"""
-        success, data = self.make_request("GET", "/dev/emails")
+        success, data = self.make_request("GET", "dev/emails")
         if success:
             return data
         return []
