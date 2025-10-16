@@ -1470,14 +1470,26 @@ async def billing_checkout(body: CheckoutBody, ctx: RequestContext = Depends(req
     if current and current.get("tier") in ("LITE","PRO"):
         raise HTTPException(status_code=409, detail="ERR_PLAN_ALREADY_ACTIVATED")
     try:
-        session = stripe.checkout.Session.create(
-            mode="payment",
-            payment_method_types=["card"],
-            line_items=[{"price_data": {"currency": "gbp", "product_data": {"name": "UnityOps Snapshot (LITE)"}, "unit_amount": 99700}, "quantity": 1}],
-            success_url=f"{APP_URL}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{APP_URL}/billing/cancelled",
-            metadata={"org_id": body.org_id, "plan": body.plan},
-        )
+        # Prefer price-based if STRIPE_LITE_PRICE_ID provided
+        lite_price = os.environ.get("STRIPE_LITE_PRICE_ID")
+        if lite_price:
+            session = stripe.checkout.Session.create(
+                mode="payment",
+                payment_method_types=["card"],
+                line_items=[{"price": lite_price, "quantity": 1}],
+                success_url=f"{APP_URL}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{APP_URL}/billing/cancelled",
+                metadata={"org_id": body.org_id, "plan": body.plan},
+            )
+        else:
+            session = stripe.checkout.Session.create(
+                mode="payment",
+                payment_method_types=["card"],
+                line_items=[{"price_data": {"currency": "gbp", "product_data": {"name": "UnityOps Snapshot (LITE)"}, "unit_amount": 99700}, "quantity": 1}],
+                success_url=f"{APP_URL}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{APP_URL}/billing/cancelled",
+                metadata={"org_id": body.org_id, "plan": body.plan},
+            )
         return {"url": session.url}
     except Exception as e:
         raise HTTPException(status_code=400, detail="ERR_CHECKOUT_CREATE")
