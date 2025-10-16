@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "@/api/client";
 import { useOrg } from "@/context/OrgContext";
 import TrendsCharts from "@/components/TrendsCharts";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 function SynergyGauge({ score, weights, drivers }) {
   const pct = Math.max(0, Math.min(100, Number(score || 0)));
@@ -15,19 +16,11 @@ function SynergyGauge({ score, weights, drivers }) {
   );
 }
 
-function SuccessBanner() {
+function SnapshotBanner({ entitlements, prefs, onDismiss }) {
   const { currentOrgId } = useOrg();
-  const [plan, setPlan] = useState(null);
-  const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await api.get(`/plans?org_id=${currentOrgId}`);
-        setPlan(data.plan || null);
-      } catch {}
-    })();
-  }, [currentOrgId]);
+  const show = prefs?.show_snapshot_banner ?? true;
+
   const generate = async () => {
     setLoading(true);
     try {
@@ -40,54 +33,29 @@ function SuccessBanner() {
       a.href = url;
       a.download = "synergy_snapshot.pdf";
       a.click();
-      setDismissed(true);
     } catch (e) {
       // optional toast
     } finally {
       setLoading(false);
     }
   };
-  if (dismissed) return null;
-  if (!plan || plan?.tier !== "LITE") return null;
+
+  if (!show) return null;
   return (
     <div className="border rounded bg-green-50 p-3" data-testid="snapshot-success-banner">
-      <div className="text-sm">🎉 Snapshot unlocked.<br />Connect/refresh data and generate your 3-day report now.</div>
+      <div className="text-sm">
+        🎉 Snapshot unlocked.<br />
+        Connect/refresh data and generate your 3-day report.
+      </div>
       <div className="mt-2 flex gap-2">
         <button data-testid="generate-snapshot" onClick={generate} className="px-3 py-1 rounded bg-green-600 text-white" disabled={loading}>
           {loading ? "Generating..." : "Generate Snapshot"}
         </button>
-        <button data-testid="snapshot-skip" onClick={() => setDismissed(true)} className="px-3 py-1 rounded border">
-          Skip for now
+        <button data-testid="snapshot-dismiss" onClick={onDismiss} className="px-3 py-1 rounded border">
+          Dismiss
         </button>
       </div>
     </div>
-  );
-}
-
-function UpgradeCta() {
-  const { currentOrgId } = useOrg();
-  const [plan, setPlan] = useState(null);
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await api.get(`/plans?org_id=${currentOrgId}`);
-        setPlan(data.plan || null);
-      } catch {}
-    })();
-  }, [currentOrgId]);
-  const upgrade = async () => {
-    try {
-      const { data } = await api.post("/billing/checkout", { org_id: currentOrgId, plan: "LITE" });
-      window.location.href = data.url;
-    } catch (e) {
-      alert(e?.response?.data?.detail || "Checkout failed");
-    }
-  };
-  if (!plan || plan?.tier === "LITE" || plan?.tier === "PRO") return null;
-  return (
-    <button data-testid="upgrade-snapshot" className="px-3 py-1 rounded bg-amber-500 text-white" onClick={upgrade}>
-      Upgrade to Snapshot (£997)
-    </button>
   );
 }
 
@@ -226,6 +194,9 @@ export default function FinanceDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [entitlements, setEntitlements] = useState(null);
+  const [prefs, setPrefs] = useState({ show_snapshot_banner: true });
+  const [alertsMsg, setAlertsMsg] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
@@ -240,96 +211,129 @@ export default function FinanceDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (currentOrgId) fetchData();
-  }, [currentOrgId]);
-
-  const canRefresh = ["ANALYST", "ADMIN", "OWNER"].includes(role || "");
-  const refresh = async () => {
+  const loadEntitlements = async () => {
     try {
-      await api.post("/ingest/finance/refresh", { org_id: currentOrgId });
-      fetchData();
+      const { data } = await api.get("/billing/entitlements");
+      setEntitlements(data);
     } catch {}
   };
 
-  return (
-    <div className="max-w-6xl mx-auto p-6" data-testid="finance-dashboard">
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-2xl font-semibold">Finance Dashboard</div>
-        <div className="flex items-center gap-2">
-          <UpgradeCta />
-          <button
-            data-testid="refresh-button"
-            disabled={!canRefresh}
-            className={`px-3 py-1 rounded ${canRefresh ? "bg-black text-white" : "bg-gray-300 text-gray-600"}`}
-            onClick={refresh}
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
-      {loading && <div>Loading...</div>}
-      {error && (
-        <div className="text-red-600 text-sm" role="alert" aria-live="polite">
-          {error}
-        </div>
-      )}
-      {data && (
-        <div className="space-y-4">
-          <SuccessBanner />
-          <CustomerLensCard lens={data.customer_lens} />
-          <SynergyGauge score={data.score?.s_fin} weights={data.score?.weights} drivers={data.score?.drivers} />
-          <TrendsCharts />
-          <KpiCards kpis={data.kpis} />
-          <CompaniesTable companies={data.companies} />
-          <DataHealth health={data.data_health} />
-          <div className="pt-2">
-            <ExportSnapshot orgId={currentOrgId} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ExportSnapshot({ orgId }) {
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-  const exportPdf = async () => {
-    setLoading(true);
-    setMsg("");
+  const loadPrefs = async () => {
     try {
-      const { data } = await api.post(
-        "/export/snapshot",
-        { org_id: orgId, period_from: "2025-07-01", period_to: "2025-09-30" },
-        { responseType: "blob" }
-      );
-      const url = window.URL.createObjectURL(new Blob([data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "synergy_snapshot.pdf");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setMsg("Download started");
+      const { data } = await api.get("/orgs/prefs");
+      setPrefs(data.ui_prefs || { show_snapshot_banner: true });
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (!currentOrgId) return;
+    fetchData();
+    loadEntitlements();
+    loadPrefs();
+    // eslint-disable-next-line
+  }, [currentOrgId]);
+
+  const dismissBanner = async () => {
+    try {
+      await api.put("/orgs/prefs", { ui_prefs: { show_snapshot_banner: false } });
+      setPrefs((p) => ({ ...p, show_snapshot_banner: false }));
+    } catch {}
+  };
+
+  const exportDisabled = entitlements && !entitlements?.limits?.exports;
+  const exportTooltip = "Exports are available on Lite and Pro.";
+
+  const sendTestAlert = async () => {
+    setAlertsMsg("");
+    try {
+      await api.post("/alerts/test", { org_id: currentOrgId });
+      setAlertsMsg("Alert sent via configured channels (mock dev emails if Slack not set).");
     } catch (e) {
-      setMsg(e?.response?.data?.detail || "Export failed");
-    } finally {
-      setLoading(false);
+      setAlertsMsg(e?.response?.data?.detail?.code === "PLAN_NOT_ALLOWED" ? "Alerts are available on Lite and Pro." : "Failed to send alert");
     }
   };
+
+  if (loading) return <div className="p-6">Loading...</div>;
+  if (error) return <div className="p-6 text-red-600">{String(error)}</div>;
+
   return (
-    <div className="flex items-center gap-2">
-      <button
-        data-testid="export-snapshot"
-        className="px-3 py-1 rounded bg-black text-white"
-        onClick={exportPdf}
-        disabled={loading}
-        aria-busy={loading}
-      >
-        Download Synergy Snapshot (PDF)
-      </button>
-      {msg && <div className="text-sm">{msg}</div>}
-    </div>
+    <TooltipProvider>
+      <div className="max-w-5xl mx-auto p-6 space-y-4" data-testid="finance-dashboard">
+        {/* Banner */}
+        <SnapshotBanner entitlements={entitlements} prefs={prefs} onDismiss={dismissBanner} />
+
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Finance</h1>
+          <div className="flex items-center gap-2">
+            {/* Export Snapshot button with gating */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  data-testid="export-snapshot"
+                  className={`px-3 py-1 rounded ${exportDisabled ? 'bg-gray-200 text-gray-500' : 'bg-black text-white'}`}
+                  onClick={async () => {
+                    if (exportDisabled) return;
+                    try {
+                      const d = new Date();
+                      const to = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 0)).toISOString().slice(0, 10);
+                      const from = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 3, 1)).toISOString().slice(0, 10);
+                      const resp = await api.post("/snapshot/generate", { org_id: currentOrgId, from, to }, { responseType: "blob" });
+                      const url = window.URL.createObjectURL(new Blob([resp.data]));
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "synergy_snapshot.pdf";
+                      a.click();
+                    } catch {}
+                  }}
+                  disabled={exportDisabled}
+                >
+                  Export Snapshot
+                </button>
+              </TooltipTrigger>
+              {exportDisabled && (
+                <TooltipContent side="bottom">{exportTooltip}</TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-3">
+          <SynergyGauge score={data?.score?.s_fin} weights={data?.score?.weights} drivers={data?.score?.drivers} />
+          <KpiCards kpis={data?.kpis} />
+          <DataHealth health={data?.data_health} />
+        </div>
+
+        <div className="border rounded bg-white p-3">
+          <div className="text-sm font-medium mb-2">Trends</div>
+          <TrendsCharts series={data?.series} />
+        </div>
+
+        <CustomerLensCard lens={data?.customer_lens} />
+
+        <div className="border rounded bg-white p-3">
+          <div className="text-sm font-medium mb-2">Alerts</div>
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  data-testid="send-test-alert"
+                  className={`px-3 py-1 rounded ${entitlements?.limits?.alerts ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'}`}
+                  onClick={() => { if (entitlements?.limits?.alerts) sendTestAlert(); }}
+                  disabled={!entitlements?.limits?.alerts}
+                >
+                  Send test alert
+                </button>
+              </TooltipTrigger>
+              {!entitlements?.limits?.alerts && (
+                <TooltipContent side="top">Alerts are available on Lite and Pro.</TooltipContent>
+              )}
+            </Tooltip>
+            {alertsMsg && <div className="text-xs text-gray-700">{alertsMsg}</div>}
+          </div>
+        </div>
+
+        <CompaniesTable companies={data?.companies} />
+      </div>
+    </TooltipProvider>
   );
 }
