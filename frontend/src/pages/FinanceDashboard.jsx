@@ -131,6 +131,10 @@ function CompaniesTable({ companies }) {
       );
     return (
       <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Bottom 30%</span>
+    );
+  };
+}
+
 function Sparkline({ id, points, label }) {
   if (!points || points.length < 2) return <div className="text-xs text-gray-500">Not enough data</div>;
   const labels = points.map(p=>p[0]);
