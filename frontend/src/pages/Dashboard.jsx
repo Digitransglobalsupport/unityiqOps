@@ -18,7 +18,7 @@ export default function Dashboard() {
     // auto-select if exactly one org and user is verified
     if ((data || []).length === 1 && user?.email_verified) {
       const only = data[0];
-      if (only?.org_id && only.org_id !== currentOrgId) {
+      if (only?.org_id) {
         setCurrentOrgId(only.org_id);
         navigate("/dashboard/finance");
       }
