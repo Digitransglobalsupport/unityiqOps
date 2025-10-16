@@ -1640,6 +1640,11 @@ async def snapshot_generate(body: SnapshotBody, ctx: RequestContext = Depends(re
         await spend_refresh({"org_id": body.org_id, "from": from_d, "to": to_d, "sources": ["csv"]}, await authed_ctx())
     except Exception:
         pass
+    # After successful export, auto-hide snapshot banner
+    try:
+        await db.orgs.update_one({"org_id": body.org_id}, {"$set": {"ui_prefs": {"show_snapshot_banner": False}}}, upsert=True)
+    except Exception:
+        pass
     # Export
     pdf_resp = await export_snapshot({"org_id": body.org_id, "from": from_d, "to": to_d}, await authed_ctx())
     return pdf_resp
