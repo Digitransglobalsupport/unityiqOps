@@ -281,6 +281,13 @@ export default function FinanceDashboard() {
     } catch {}
   };
 
+  const dismissDemo = async () => {
+    try {
+      await api.put("/orgs/prefs", { ui_prefs: { ...prefs, show_demo_banner: false } });
+      setPrefs((p)=> ({ ...p, show_demo_banner: false }));
+    } catch {}
+  };
+
   const exportDisabled = entitlements && !entitlements?.limits?.exports;
   const exportTooltip = (
     <div className="space-y-1">
