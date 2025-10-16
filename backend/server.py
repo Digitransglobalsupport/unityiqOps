@@ -1963,9 +1963,11 @@ async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(re
         y -= 12
         if y < 100: c.showPage(); y = 780
 
-    # Footer
+    # Footer with configurable assumptions
+    cfg = await db.org_settings.find_one({"org_id": org_id}) or {}
+    savings = cfg.get("savings") or {"volume_pct": 8, "saas_pct": 15, "tail_threshold": 300}
     c.setFont("Helvetica", 8)
-    c.drawString(50, 50, "Estimates use conservative defaults: volume 8%, SaaS 15%, tail 100%.")
+    c.drawString(50, 50, f"Assumptions: Volume {savings['volume_pct']}%, SaaS {savings['saas_pct']}%, Tail threshold £{savings['tail_threshold']}.")
     c.showPage(); c.save()
     buf.seek(0)
     return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=synergy_snapshot.pdf"})
