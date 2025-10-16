@@ -45,7 +45,7 @@ function SnapshotBanner({ entitlements, prefs, onDismiss }) {
     <div className="border rounded bg-green-50 p-3" data-testid="snapshot-success-banner">
       <div className="text-sm">
         🎉 Snapshot unlocked.<br />
-        Connect/refresh data and generate your 3-day report.
+        Connect or refresh data and generate your 3-day report.
       </div>
       <div className="mt-2 flex gap-2">
         <button data-testid="generate-snapshot" onClick={generate} className="px-3 py-1 rounded bg-green-600 text-white" disabled={loading}>
@@ -55,6 +55,7 @@ function SnapshotBanner({ entitlements, prefs, onDismiss }) {
           Dismiss
         </button>
       </div>
+      <div className="text-xs text-gray-700 mt-1">You can dismiss this anytime in Settings.</div>
     </div>
   );
 }
