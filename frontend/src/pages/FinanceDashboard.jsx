@@ -314,7 +314,8 @@ export default function FinanceDashboard() {
   return (
     <TooltipProvider>
       <div className="max-w-5xl mx-auto p-6 space-y-4" data-testid="finance-dashboard">
-        {/* Banner */}
+        {/* Banners */}
+        <DemoBanner flags={orgFlags} prefs={prefs} onDismiss={dismissDemo} />
         <SnapshotBanner entitlements={entitlements} prefs={prefs} onDismiss={dismissBanner} />
 
         <div className="flex items-center justify-between">
