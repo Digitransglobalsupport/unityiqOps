@@ -1547,7 +1547,6 @@ async def get_org_flags(ctx: RequestContext = Depends(require_role("VIEWER"))):
         flags["demo_seeded"] = False
     return {"org_flags": flags}
 
-            return {"ok": True}
         exists_org = await db.orgs.find_one({"org_id": org_id})
         if not exists_org:
             return {"ok": True}
