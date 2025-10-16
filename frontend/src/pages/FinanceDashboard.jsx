@@ -302,6 +302,13 @@ export default function FinanceDashboard() {
                 <TooltipContent side="bottom">{exportTooltip}</TooltipContent>
               )}
             </Tooltip>
+            {/* Upgrade CTA with helper subtext */}
+            <div className="ml-2 text-right">
+              <button data-testid="upgrade-snapshot" className="px-3 py-1 rounded bg-amber-500 text-white" onClick={async ()=>{ try{ const { data } = await api.post('/billing/checkout', { org_id: currentOrgId, plan: 'LITE' }); window.location.href = data.url; }catch(e){ alert(e?.response?.data?.detail || 'Checkout failed'); } }}>
+                Upgrade to Snapshot (£997)
+              </button>
+              <div className="text-[11px] text-gray-500">3-day report with cross-sell and vendor savings.</div>
+            </div>
           </div>
         </div>
 
