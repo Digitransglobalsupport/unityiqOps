@@ -260,8 +260,11 @@ export default function FinanceDashboard() {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get(`/dashboard/finance?org_id=${currentOrgId}`);
-      setData(data);
+      const [dash, trends] = await Promise.all([
+        api.get(`/dashboard/finance?org_id=${currentOrgId}`),
+        api.get(`/dashboard/finance/trends?org_id=${currentOrgId}&periods=6`)
+      ]);
+      setData({ ...(dash.data||{}), trends: trends.data?.series || [] });
     } catch (e) {
       setError(e?.response?.data?.detail || "Failed to load dashboard");
     } finally {
