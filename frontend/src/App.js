@@ -110,6 +110,14 @@ function AppRoutes() {
         }
       />
       <Route path="/dev/emails" element={<DevEmails />} />
+
+      <Route path="/settings" element={
+        <ProtectedRoute requireVerified={true} minRole="ADMIN">
+          <Settings />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/contact" element={<Contact />} />
     </Routes>
   );
 }
