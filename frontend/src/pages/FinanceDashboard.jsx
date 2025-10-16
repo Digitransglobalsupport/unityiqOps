@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "@/api/client";
 import { useOrg } from "@/context/OrgContext";
 import TrendsCharts from "@/components/TrendsCharts";
+import { Line } from "react-chartjs-2";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 function SynergyGauge({ score, weights, drivers }) {
