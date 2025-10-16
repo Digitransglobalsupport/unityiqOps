@@ -1,196 +1,220 @@
 {
   "summary": {
-    "total_tests": 27,
-    "passed_tests": 20,
-    "success_rate": 74.07407407407408
+    "total_tests": 31,
+    "passed_tests": 27,
+    "success_rate": 87.09677419354838
   },
   "detailed_results": [
     {
       "test": "Signup",
       "success": true,
-      "details": "User test_user_1760552060@example.com created successfully",
-      "timestamp": "2025-10-15T18:14:20.542629"
+      "details": "User test_user_1760598787@example.com created successfully",
+      "timestamp": "2025-10-16T07:13:07.931269"
     },
     {
       "test": "Signup Email Sent",
       "success": true,
       "details": "Verification email found in dev store",
-      "timestamp": "2025-10-15T18:14:21.584386"
+      "timestamp": "2025-10-16T07:13:08.985835"
     },
     {
       "test": "Email Verification",
       "success": true,
       "details": "Email verified successfully",
-      "timestamp": "2025-10-15T18:14:21.626844"
+      "timestamp": "2025-10-16T07:13:09.038932"
     },
     {
       "test": "Login",
       "success": true,
-      "details": "Login successful for test_user_1760552060@example.com",
-      "timestamp": "2025-10-15T18:14:21.892708"
+      "details": "Login successful for test_user_1760598787@example.com",
+      "timestamp": "2025-10-16T07:13:09.335140"
     },
     {
       "test": "Create Organization",
       "success": true,
-      "details": "Org 'TestOrg_1760552061' created with ID 4850d8f9-8f4a-4eb1-9487-74c4575f3e3e",
-      "timestamp": "2025-10-15T18:14:21.938211"
+      "details": "Org 'TestOrg_1760598789' created with ID 33935494-1b32-4c7a-acf1-adcaeea9d1e4",
+      "timestamp": "2025-10-16T07:13:09.410429"
     },
     {
       "test": "Signup",
       "success": true,
-      "details": "User test_user_1760552061@example.com created successfully",
-      "timestamp": "2025-10-15T18:14:22.251134"
+      "details": "User test_user_1760598789@example.com created successfully",
+      "timestamp": "2025-10-16T07:13:09.673433"
     },
     {
       "test": "Signup Email Sent",
       "success": true,
       "details": "Verification email found in dev store",
-      "timestamp": "2025-10-15T18:14:23.289001"
+      "timestamp": "2025-10-16T07:13:10.713547"
     },
     {
       "test": "Email Verification",
       "success": true,
       "details": "Email verified successfully",
-      "timestamp": "2025-10-15T18:14:23.371057"
+      "timestamp": "2025-10-16T07:13:10.749635"
     },
     {
       "test": "Login",
       "success": true,
-      "details": "Login successful for test_user_1760552061@example.com",
-      "timestamp": "2025-10-15T18:14:23.635388"
+      "details": "Login successful for test_user_1760598789@example.com",
+      "timestamp": "2025-10-16T07:13:11.011676"
     },
     {
       "test": "Invite Member",
       "success": true,
-      "details": "Invited test_user_1760552061@example.com as VIEWER to TestOrg_1760552061",
-      "timestamp": "2025-10-15T18:14:23.676687"
+      "details": "Invited test_user_1760598789@example.com as VIEWER to TestOrg_1760598789",
+      "timestamp": "2025-10-16T07:13:11.066706"
     },
     {
       "test": "Invite Email Sent",
-      "success": false,
-      "details": "Invite email not found",
-      "timestamp": "2025-10-15T18:14:28.813026"
+      "success": true,
+      "details": "Invite email found in dev store",
+      "timestamp": "2025-10-16T07:13:12.108935"
+    },
+    {
+      "test": "Accept Invite",
+      "success": true,
+      "details": "Invite accepted by test_user_1760598789@example.com",
+      "timestamp": "2025-10-16T07:13:12.188175"
     },
     {
       "test": "Signup",
       "success": true,
-      "details": "User test_user_1760552074@example.com created successfully",
-      "timestamp": "2025-10-15T18:14:35.219594"
+      "details": "User test_user_1760598792@example.com created successfully",
+      "timestamp": "2025-10-16T07:13:12.449577"
     },
     {
       "test": "Signup Email Sent",
       "success": true,
       "details": "Verification email found in dev store",
-      "timestamp": "2025-10-15T18:14:36.261779"
+      "timestamp": "2025-10-16T07:13:13.512957"
     },
     {
       "test": "Email Verification",
       "success": true,
       "details": "Email verified successfully",
-      "timestamp": "2025-10-15T18:14:36.301149"
+      "timestamp": "2025-10-16T07:13:13.550208"
     },
     {
       "test": "Login",
       "success": true,
-      "details": "Login successful for test_user_1760552074@example.com",
-      "timestamp": "2025-10-15T18:14:36.567166"
+      "details": "Login successful for test_user_1760598792@example.com",
+      "timestamp": "2025-10-16T07:13:13.811761"
     },
     {
       "test": "Invite Member",
       "success": true,
-      "details": "Invited test_user_1760552074@example.com as ANALYST to TestOrg_1760552061",
-      "timestamp": "2025-10-15T18:14:36.604265"
+      "details": "Invited test_user_1760598792@example.com as ANALYST to TestOrg_1760598789",
+      "timestamp": "2025-10-16T07:13:13.851442"
     },
     {
       "test": "Invite Email Sent",
-      "success": false,
-      "details": "Invite email not found",
-      "timestamp": "2025-10-15T18:14:41.741898"
+      "success": true,
+      "details": "Invite email found in dev store",
+      "timestamp": "2025-10-16T07:13:14.892059"
+    },
+    {
+      "test": "Accept Invite",
+      "success": true,
+      "details": "Invite accepted by test_user_1760598792@example.com",
+      "timestamp": "2025-10-16T07:13:14.933297"
     },
     {
       "test": "CSV Ingest",
       "success": false,
-      "details": "Failed: {'detail': 'No membership in org'}",
-      "timestamp": "2025-10-15T18:14:48.938638"
+      "details": "Error: 'NoneType' object has no attribute 'get'",
+      "timestamp": "2025-10-16T07:13:14.983179"
     },
     {
       "test": "CSV Ingest RBAC: VIEWER Denied",
       "success": true,
       "details": "VIEWER correctly denied CSV ingest access",
-      "timestamp": "2025-10-15T18:14:48.978017"
+      "timestamp": "2025-10-16T07:13:15.026087"
     },
     {
       "test": "Dashboard Finance",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T18:14:49.015850"
+      "success": true,
+      "details": "Dashboard loaded with score: 72, weights: True, drivers: True",
+      "timestamp": "2025-10-16T07:13:15.115127"
     },
     {
       "test": "Finance Trends",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T18:14:49.098040"
+      "success": true,
+      "details": "Found 4 series with >=2 points: ['revenue', 'gm_pct', 'opex', 'dso_days']",
+      "timestamp": "2025-10-16T07:13:15.157596"
     },
     {
       "test": "Connections Status",
-      "success": false,
-      "details": "Failed: {'detail': 'No membership in org', 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-15T18:14:49.136024"
+      "success": true,
+      "details": "Found 0 valid tenant objects",
+      "timestamp": "2025-10-16T07:13:15.194737"
     },
     {
       "test": "Export PDF",
       "success": false,
       "details": "Status: 403, Content-Type: application/json",
-      "timestamp": "2025-10-15T18:14:49.176099"
+      "timestamp": "2025-10-16T07:13:15.426420"
     },
     {
       "test": "Onboarding: Xero OAuth Start",
-      "success": true,
-      "details": "Auth URL: /api/mock/xero/consent?state=multi-tenant-dash-4",
-      "timestamp": "2025-10-15T18:14:49.216643"
+      "success": false,
+      "details": "Failed: {'detail': {'code': 'LIMIT_EXCEEDED', 'limit': 'connectors', 'allowed': 0, 'current': 0}, 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-16T07:13:15.467946"
     },
     {
-      "test": "Onboarding: Companies Discover",
+      "test": "Billing Entitlements FREE",
       "success": true,
-      "details": "Found 2 companies",
-      "timestamp": "2025-10-15T18:14:49.255949"
+      "details": "FREE plan limits correct: {'companies': 1, 'connectors': 0, 'exports': False, 'alerts': False}",
+      "timestamp": "2025-10-16T07:13:15.503959"
     },
     {
-      "test": "Onboarding: Companies Select",
+      "test": "Export Gating: Snapshot Generate",
       "success": true,
-      "details": "Companies selected successfully",
-      "timestamp": "2025-10-15T18:14:49.338127"
+      "details": "Correctly blocked with EXPORTS_NOT_ENABLED",
+      "timestamp": "2025-10-16T07:13:15.545505"
+    },
+    {
+      "test": "Export Gating: Export Snapshot",
+      "success": true,
+      "details": "Correctly blocked with EXPORTS_NOT_ENABLED",
+      "timestamp": "2025-10-16T07:13:15.624785"
+    },
+    {
+      "test": "Billing Checkout",
+      "success": false,
+      "details": "Failed: {'detail': 'Stripe not configured', 'actual_status': 500, 'expected_status': 200}",
+      "timestamp": "2025-10-16T07:13:15.661215"
     },
     {
       "test": "Audit Logs Access",
       "success": true,
-      "details": "Retrieved 2 audit log entries",
-      "timestamp": "2025-10-15T18:14:49.377702"
+      "details": "Retrieved 3 audit log entries",
+      "timestamp": "2025-10-16T07:13:15.702425"
     }
   ],
   "test_data": {
     "users": {
-      "test_user_1760552060@example.com": {
-        "email": "test_user_1760552060@example.com",
+      "test_user_1760598787@example.com": {
+        "email": "test_user_1760598787@example.com",
         "password": "SecurePass123!",
         "verified": true
       },
-      "test_user_1760552061@example.com": {
-        "email": "test_user_1760552061@example.com",
+      "test_user_1760598789@example.com": {
+        "email": "test_user_1760598789@example.com",
         "password": "SecurePass123!",
         "verified": true
       },
-      "test_user_1760552074@example.com": {
-        "email": "test_user_1760552074@example.com",
+      "test_user_1760598792@example.com": {
+        "email": "test_user_1760598792@example.com",
         "password": "SecurePass123!",
         "verified": true
       }
     },
     "orgs": {
-      "TestOrg_1760552061": {
-        "org_id": "4850d8f9-8f4a-4eb1-9487-74c4575f3e3e",
-        "name": "TestOrg_1760552061",
-        "owner": "test_user_1760552060@example.com"
+      "TestOrg_1760598789": {
+        "org_id": "33935494-1b32-4c7a-acf1-adcaeea9d1e4",
+        "name": "TestOrg_1760598789",
+        "owner": "test_user_1760598787@example.com"
       }
     }
   }
