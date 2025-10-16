@@ -254,7 +254,14 @@ export default function FinanceDashboard() {
   const loadPrefs = async () => {
     try {
       const { data } = await api.get("/orgs/prefs");
-      setPrefs(data.ui_prefs || { show_snapshot_banner: true });
+      setPrefs({ show_snapshot_banner: true, show_demo_banner: true, ...(data.ui_prefs||{}) });
+    } catch {}
+  };
+
+  const loadFlags = async () => {
+    try {
+      const { data } = await api.get("/orgs/flags");
+      setOrgFlags(data.org_flags || { demo_seeded: false });
     } catch {}
   };
 
