@@ -1536,18 +1536,8 @@ async def billing_webhook(request: Request, stripe_signature: str = Header(None)
         # Hard check: metadata.org_id must exist and belong to a known org
         if not org_id:
             return {"error": "No org_id in metadata"}
-
-@api.get("/orgs/flags")
-async def get_org_flags(ctx: RequestContext = Depends(require_role("VIEWER"))):
-    if not ctx.org_id:
-        raise HTTPException(status_code=400, detail="No org selected")
-    org = await db.orgs.find_one({"org_id": ctx.org_id}, {"_id": 0, "org_flags": 1}) or {}
-    flags = org.get("org_flags") or {"demo_seeded": False}
-    if "demo_seeded" not in flags:
-        flags["demo_seeded"] = False
-    return {"org_flags": flags}
-
-    exists_org = await db.orgs.find_one({"org_id": org_id})
+        
+        exists_org = await db.orgs.find_one({"org_id": org_id})
         if not exists_org:
             return {"ok": True}
         if plan == "LITE":
@@ -1560,6 +1550,16 @@ async def get_org_flags(ctx: RequestContext = Depends(require_role("VIEWER"))):
                 await db.orgs.update_one({"org_id": org_id}, {"$set": {"ui_prefs": {"show_snapshot_banner": False}}}, upsert=True)
                 await db.billing_events.insert_one({"org_id": org_id, "type": "checkout.session.completed", "stripe_id": eid, "amount": data.get("amount_total"), "currency": data.get("currency"), "ts": datetime.now(timezone.utc)})
     return {"ok": True}
+
+@api.get("/orgs/flags")
+async def get_org_flags(ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    org = await db.orgs.find_one({"org_id": ctx.org_id}, {"_id": 0, "org_flags": 1}) or {}
+    flags = org.get("org_flags") or {"demo_seeded": False}
+    if "demo_seeded" not in flags:
+        flags["demo_seeded"] = False
+    return {"org_flags": flags}
 
 # --- Org Settings (Savings assumptions) ---
 class SavingsSettings(BaseModel):
