@@ -212,6 +212,20 @@
       - working: "NA"
         agent: "testing"
         comment: "⚠️ ENVIRONMENT LIMITATION: POST /api/billing/checkout returns 500 'Stripe not configured' as STRIPE_SECRET_KEY not set. Endpoint implementation is correct - would work in production with Stripe keys."
+      - working: "NA"
+        agent: "testing"
+        comment: "✅ FIXED SYNTAX ERROR: Completed incomplete checkout function that was causing backend crashes. Function now properly handles both price-based and inline pricing for Stripe checkout sessions. Still returns 500 due to missing STRIPE_SECRET_KEY (expected in test env)."
+  - task: "Stripe webhook signature validation"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "🚨 CRITICAL SECURITY ISSUE: Webhook at /api/billing/webhook bypasses signature validation when STRIPE_WEBHOOK_SECRET not configured, returning 200 OK instead of 400 Bad Request for missing/invalid Stripe-Signature headers. This violates security requirements - webhook should validate signature presence/format regardless of secret configuration."
 
 ## frontend:
   - task: "Auto-redirect when single org"
