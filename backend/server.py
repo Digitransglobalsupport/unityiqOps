@@ -270,6 +270,9 @@ def rate_limit(key: str, limit: int, window_seconds: int) -> None:
 
 # --- FastAPI App & Router ---
 app = FastAPI()
+
+# Rate limit snapshot generation: 2/min per org
+SNAPSHOT_RATE_LIMIT = int(os.environ.get("SNAPSHOT_RATE_LIMIT", "2"))
 api = APIRouter(prefix="/api")
 
 app.add_middleware(
