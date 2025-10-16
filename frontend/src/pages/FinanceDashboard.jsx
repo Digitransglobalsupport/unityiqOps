@@ -19,7 +19,7 @@ function SynergyGauge({ score, weights, drivers }) {
 function SnapshotBanner({ entitlements, prefs, onDismiss }) {
   const { currentOrgId } = useOrg();
   const [loading, setLoading] = useState(false);
-  const show = prefs?.show_snapshot_banner ?? true;
+  const show = (prefs?.show_snapshot_banner ?? true) && !!entitlements?.limits?.exports;
 
   const generate = async () => {
     setLoading(true);
