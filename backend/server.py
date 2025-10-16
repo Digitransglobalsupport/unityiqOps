@@ -1509,6 +1509,15 @@ async def billing_checkout(body: CheckoutBody, ctx: RequestContext = Depends(req
                 mode="payment",
                 payment_method_types=["card"],
                 line_items=[{"price_data": {"currency": "gbp", "product_data": {"name": "UnityOps Snapshot (LITE)"}, "unit_amount": 99700}, "quantity": 1}],
+
+# Billing helper: get latest billing event for org
+@api.get("/billing/last")
+async def billing_last(ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    doc = await db.billing_events.find({"org_id": ctx.org_id}, {"_id": 0}).sort("ts", -1).to_list(1)
+    return doc[0] if doc else {}
+
                 success_url=f"{APP_URL}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{APP_URL}/billing/cancelled",
                 metadata={"org_id": body.org_id, "plan": body.plan},
