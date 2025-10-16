@@ -76,8 +76,6 @@ function DemoBanner({ flags, prefs, onDismiss }) {
   );
 }
 
-}
-
 function KpiCards({ kpis }) {
   const items = [
     { key: "revenue", label: "Revenue" },
