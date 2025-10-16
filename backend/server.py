@@ -1436,6 +1436,20 @@ async def spend_refresh(body: Dict[str, Any], ctx: RequestContext = Depends(requ
         })
 
     await db.savings_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": opps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    # Annotate with org savings settings if present for transparency
+    try:
+        org_set = await db.org_settings.find_one({"org_id": org_id}) or {}
+        savings_cfg = org_set.get("savings") or {}
+        for o in opps:
+            o.setdefault("assumptions", {})
+            o["assumptions"].update({
+                "volume_pct": savings_cfg.get("volume_pct", 8),
+                "saas_pct": savings_cfg.get("saas_pct", 15),
+                "tail_threshold": savings_cfg.get("tail_threshold", 300),
+            })
+    except Exception:
+        pass
+    await db.savings_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": opps, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
     await audit_log_entry(org_id, ctx.user_id, "spend_refresh", "spend", {"opps": len(opps)})
     # return after computing
     return {"ok": True, "opps": len(opps)}
