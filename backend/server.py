@@ -1509,6 +1509,15 @@ async def billing_checkout(body: CheckoutBody, ctx: RequestContext = Depends(req
                 mode="payment",
                 payment_method_types=["card"],
                 line_items=[{"price_data": {"currency": "gbp", "product_data": {"name": "UnityOps Snapshot (LITE)"}, "unit_amount": 99700}, "quantity": 1}],
+                success_url=f"{APP_URL}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{APP_URL}/billing/cancelled",
+                metadata={"org_id": body.org_id, "plan": body.plan},
+            )
+        await audit_log_entry(body.org_id, ctx.user_id, "checkout_create", "billing", {"session_id": session.id, "plan": body.plan})
+        return {"url": session.url}
+    except Exception as e:
+        await audit_log_entry(body.org_id, ctx.user_id, "checkout_error", "billing", {"error": str(e), "plan": body.plan})
+        raise HTTPException(status_code=500, detail=f"Checkout creation failed: {str(e)}")
 
 # Billing helper: get latest billing event for org
 @api.get("/billing/last")
