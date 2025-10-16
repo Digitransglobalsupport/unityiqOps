@@ -101,6 +101,41 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 
+  - task: "Demo banner & flags"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/FinanceDashboard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added GET /api/orgs/flags; Finance shows demo banner when org_flags.demo_seeded=true and persists dismissal via /api/orgs/prefs.show_demo_banner=false."
+  - task: "Settings page (savings assumptions)"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/Settings.jsx, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added GET/PUT /api/orgs/settings with bounds validation; Settings UI persists values; PDF footer now reflects assumptions."
+  - task: "Snapshot RL 2/min"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added per-org rate limit for /api/snapshot/generate: 2/min."
+
+
 ## user_problem_statement: User could not navigate to dashboards initially; fix 502s and improve onboarding. Now implement: auto-redirect for single-org users, persistent snapshot banner prefs, gated tooltips by plan, and automated billing tests.
 
 ## backend:
