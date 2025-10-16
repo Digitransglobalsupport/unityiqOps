@@ -1511,6 +1511,40 @@ async def billing_webhook(request: Request, stripe_signature: str = Header(None)
                 await db.billing_events.insert_one({"org_id": org_id, "type": "checkout.session.completed", "stripe_id": eid, "amount": data.get("amount_total"), "currency": data.get("currency"), "ts": datetime.now(timezone.utc)})
     return {"ok": True}
 
+# --- Org Settings (Savings assumptions) ---
+class SavingsSettings(BaseModel):
+    volume_pct: int = 8
+    saas_pct: int = 15
+    tail_threshold: int = 300
+
+class OrgSettingsPut(BaseModel):
+    savings: SavingsSettings
+
+@api.get("/orgs/settings")
+async def get_org_settings(ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    doc = await db.org_settings.find_one({"org_id": ctx.org_id}, {"_id": 0}) or {}
+    savings = (doc.get("savings") or {"volume_pct": 8, "saas_pct": 15, "tail_threshold": 300})
+    return {"savings": savings}
+
+@api.put("/orgs/settings")
+async def put_org_settings(payload: OrgSettingsPut, ctx: RequestContext = Depends(require_role("ADMIN"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    s = payload.savings
+    # validation
+    if not (0 <= s.volume_pct <= 50):
+        raise HTTPException(status_code=400, detail="volume_pct out of range")
+    if not (0 <= s.saas_pct <= 50):
+        raise HTTPException(status_code=400, detail="saas_pct out of range")
+    if not (0 <= s.tail_threshold <= 5000):
+        raise HTTPException(status_code=400, detail="tail_threshold out of range")
+    await db.org_settings.update_one({"org_id": ctx.org_id}, {"$set": {"org_id": ctx.org_id, "savings": s.model_dump(), "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    await audit_log_entry(ctx.org_id, ctx.user_id, "put", "org_settings", {"savings": s.model_dump()})
+    return {"ok": True}
+
+
 
 # --- Org UI Preferences ---
 class OrgPrefsPut(BaseModel):
