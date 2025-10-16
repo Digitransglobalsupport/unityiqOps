@@ -330,7 +330,7 @@ export default function FinanceDashboard() {
         <div className="grid md:grid-cols-3 gap-3">
           <SynergyGauge score={data?.score?.s_fin} weights={data?.score?.weights} drivers={data?.score?.drivers} />
           <KpiCards kpis={data?.kpis} />
-          <DataHealth health={data?.data_health} />
+          <DataHealth health={data?.data_health} lastSyncAt={data?.last_sync_at} />
         </div>
 
         <div className="border rounded bg-white p-3">
