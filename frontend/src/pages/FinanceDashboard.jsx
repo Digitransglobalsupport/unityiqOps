@@ -131,10 +131,25 @@ function CompaniesTable({ companies }) {
   );
 }
 
-function DataHealth({ health }) {
+function DataHealth({ health, lastSyncAt }) {
+  const lastSyncAge = (() => {
+    try {
+      if (!lastSyncAt) return "-";
+      const t = new Date(lastSyncAt).getTime();
+      const diffMin = Math.max(0, Math.floor((Date.now() - t) / 60000));
+      if (diffMin < 60) return `${diffMin} min ago`;
+      const diffHr = Math.floor(diffMin / 60);
+      if (diffHr < 24) return `${diffHr} hr ago`;
+      const diffDay = Math.floor(diffHr / 24);
+      return `${diffDay} days ago`;
+    } catch { return "-"; }
+  })();
+  const fxFallback = health?.fx_fallback || "-";
   return (
     <div data-testid="data-health" className="border rounded bg-white p-3">
       <div className="text-sm font-medium mb-2">Data Health</div>
+      <div className="text-xs text-gray-600">Last sync: {lastSyncAge}</div>
+      <div className="text-xs text-gray-600">FX fallback: {fxFallback}</div>
       <div className="text-xs text-gray-600">Stale days: {health?.stale_days ?? "-"}</div>
       {(health?.warnings || []).length > 0 && (
         <ul className="list-disc ml-6 text-xs text-yellow-800 mt-2">
