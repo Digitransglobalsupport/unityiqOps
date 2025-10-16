@@ -146,7 +146,7 @@
     {
       "test": "Onboarding: Xero OAuth Start",
       "success": true,
-      "details": "Auth URL: /api/mock/xero/consent?state=9eab7f61-db5e-4ebb-a4a1-13a81adbb5e3",
+      "details": "Auth URL: /api/mock/xero/consent?state=multi-tenant-dash-4",
       "timestamp": "2025-10-15T18:14:49.216643"
     },
     {
