@@ -100,4 +100,96 @@
 
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
+
+## user_problem_statement: User could not navigate to dashboards initially; fix 502s and improve onboarding. Now implement: auto-redirect for single-org users, persistent snapshot banner prefs, gated tooltips by plan, and automated billing tests.
+
+## backend:
+  - task: "Org UI prefs endpoints"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added GET/PUT /api/orgs/prefs with RBAC (VIEWER/ADMIN), default show_snapshot_banner=true, audit log and upsert."
+  - task: "Billing entitlements endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added GET /api/billing/entitlements returning plan, limits, usage per org."
+  - task: "Stripe webhook auto-hide banner + limits"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "On checkout.session.completed: set plan LITE limits (companies=3, connectors=1, exports=true, alerts=true), entitlements.snapshot_enabled=true, and orgs.ui_prefs.show_snapshot_banner=false. Idempotent on event id."
+
+## frontend:
+  - task: "Auto-redirect when single org"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/Dashboard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Dashboard auto-selects and navigates to /dashboard/finance when email_verified=true and exactly one org."
+  - task: "Banner prefs + dismiss"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/FinanceDashboard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Reads /api/orgs/prefs and shows Snapshot banner only if prefs true and exports enabled; Dismiss triggers PUT to persist."
+  - task: "Tooltips for gated actions"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/FinanceDashboard.jsx, /app/frontend/src/pages/OnboardingWizard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Export Snapshot, Alerts, Connectors, and Companies selection are gated with tooltips per plan limits using /api/billing/entitlements."
+
+## metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+## test_plan:
+  current_focus:
+    - "Backend: entitlements, orgs/prefs, webhook idempotency, export gating"
+    - "Frontend: banner visibility, tooltips show when gated"
+  stuck_tasks:
+    - "None"
+  test_all: false
+  test_priority: "high_first"
+
+## agent_communication:
+  - agent: "main"
+    message: "Please run backend tests first per tests/backend_test_plan.md. Then we can run automated frontend smoke tests for banner and tooltips."
+
 #====================================================================================================
