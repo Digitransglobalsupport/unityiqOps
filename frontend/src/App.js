@@ -21,6 +21,8 @@ import CrmIngest from "@/pages/CrmIngest";
 import CustomersDashboard from "@/pages/CustomersDashboard";
 import VendorsDashboard from "@/pages/VendorsDashboard";
 import SpendIngest from "@/pages/SpendIngest";
+import Settings from "@/pages/Settings";
+import Contact from "@/pages/Contact";
 
 function ProtectedRoute({ children, requireVerified=false, minRole=null }) {
   const { isAuthenticated, loading, user } = useAuth();
