@@ -858,6 +858,72 @@ async def connections_status(org_id: str, ctx: RequestContext = Depends(require_
         tenants = [{"tenant_id": conn["tenant_id"], "name": "Alpha Ltd"}]
     return {"xero": {"connected": bool(conn), "last_sync_at": (conn or {}).get("updated_at"), "tenants": tenants}}
 
+
+# --- Xero live helpers ---
+async def get_xero_conn(org_id: str) -> Dict[str, Any]:
+    conn = await db.connections.find_one({"org_id": org_id, "vendor": "xero"})
+    if not conn:
+        raise HTTPException(status_code=400, detail={"code":"not_connected"})
+    return conn
+
+async def decrypt_token(org_id: str, enc: Dict[str, Any]) -> str:
+    try:
+        return aesgcm_decrypt_for_org(org_id, enc)
+    except Exception:
+        raise HTTPException(status_code=400, detail={"code":"token_decrypt_failed"})
+
+async def xero_refresh_tokens(org_id: str, conn: Dict[str, Any]) -> Dict[str, Any]:
+    import httpx
+    client_id = os.environ.get("XERO_CLIENT_ID"); client_secret = os.environ.get("XERO_CLIENT_SECRET")
+    refresh_token = await decrypt_token(org_id, conn["tokens"]["refresh"])
+    data = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_id": client_id,
+        "client_secret": client_secret,
+    }
+    async with httpx.AsyncClient(timeout=float(os.environ.get("XERO_FETCH_TIMEOUT_SEC", "25"))) as client:
+        resp = await client.post("https://identity.xero.com/connect/token", data=data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+        if resp.status_code >= 400:
+            await db.connection_errors.update_one({"org_id": org_id, "vendor": "xero"}, {"$set": {"org_id": org_id, "vendor": "xero", "code": "invalid_grant", "message": "Xero access expired. Click Reconnect to re-consent.", "ts": datetime.now(timezone.utc)}}, upsert=True)
+            raise HTTPException(status_code=400, detail={"code":"invalid_grant"})
+        td = resp.json()
+        access_token = td.get("access_token"); new_refresh = td.get("refresh_token") or refresh_token; expires_in = int(td.get("expires_in", 1800))
+        enc_access = aesgcm_encrypt_for_org(org_id, access_token)
+        enc_refresh = aesgcm_encrypt_for_org(org_id, new_refresh)
+        await db.connections.update_one({"org_id": org_id, "vendor": "xero"}, {"$set": {"tokens": {"access": enc_access, "refresh": enc_refresh}, "expires_at": (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).isoformat(), "updated_at": datetime.now(timezone.utc)}})
+        return {"access_token": access_token}
+
+async def xero_request(org_id: str, tenant_id: str, path: str, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    import httpx
+    conn = await get_xero_conn(org_id)
+    # Refresh if expiring soon
+    try:
+        exp = datetime.fromisoformat(conn.get("expires_at"))
+        if exp - datetime.now(timezone.utc) < timedelta(minutes=5):
+            await xero_refresh_tokens(org_id, conn)
+            conn = await get_xero_conn(org_id)
+    except Exception:
+        pass
+    access_token = await decrypt_token(org_id, conn["tokens"]["access"])
+    headers = {"Authorization": f"Bearer {access_token}", "xero-tenant-id": tenant_id}
+    url = f"https://api.xero.com{path}"
+    timeout = float(os.environ.get("XERO_FETCH_TIMEOUT_SEC", "25"))
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        r = await client.get(url, headers=headers, params=params or {})
+        if r.status_code == 401:
+            # try refresh once
+            await xero_refresh_tokens(org_id, conn)
+            conn = await get_xero_conn(org_id)
+            access_token = await decrypt_token(org_id, conn["tokens"]["access"])
+            headers["Authorization"] = f"Bearer {access_token}"
+            r = await client.get(url, headers=headers, params=params or {})
+        if r.status_code == 429:
+            await db.connection_errors.update_one({"org_id": org_id, "vendor": "xero"}, {"$set": {"org_id": org_id, "vendor": "xero", "code": "rate_limit_exceeded", "message": "Xero rate limit hit. We’ll auto-retry shortly.", "ts": datetime.now(timezone.utc)}}, upsert=True)
+            raise HTTPException(status_code=429, detail={"code":"rate_limit_exceeded"})
+        r.raise_for_status()
+        return r.json()
+
 # CSV ingest with validation. Accepts multipart form-data files: pl, bs (optional), ar
 from fastapi import UploadFile, File, Form
 import csv
