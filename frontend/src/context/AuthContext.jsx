@@ -33,6 +33,7 @@ export function AuthProvider({ children }) {
     const { data } = await api.post("/auth/login", { email, password });
     tokenStore.access = data.access_token;
     tokenStore.refresh = data.refresh_token;
+    // Fetch user & memberships for role-aware redirects
     await fetchMe();
     return data;
   };
