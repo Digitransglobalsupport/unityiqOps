@@ -2,6 +2,8 @@ import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useOrg } from "@/context/OrgContext";
 import { Link, useNavigate } from "react-router-dom";
+import api from "@/api/client";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 export default function NavBar() {
   const { user, memberships, logout, isAuthenticated } = useAuth();
