@@ -568,7 +568,7 @@ async def invite_member(org_id: str, payload: InviteRequest, ctx: RequestContext
 # --- Mock Xero OAuth + CSV ingest scaffolding (Day 1 prep) ---
 @api.post("/connections/xero/oauth/start")
 async def xero_oauth_start(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("ADMIN"))):
-    # Return mock consent URL that redirects back to callback with state
+    # Return real Xero consent URL when XERO_MODE=live, else mock page
     org_id = body.get("org_id")
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
@@ -578,7 +578,25 @@ async def xero_oauth_start(body: Dict[str, Any], ctx: RequestContext = Depends(r
     if connected >= limits["connectors"]:
         raise HTTPException(status_code=403, detail={"code":"LIMIT_EXCEEDED", "limit":"connectors", "allowed": limits["connectors"], "current": connected})
     state = str(uuid.uuid4())
-    await db.oauth_states.insert_one({"state": state, "org_id": org_id, "ts": datetime.now(timezone.utc)})
+    await db.oauth_states.update_one({"state": state}, {"$set": {"state": state, "org_id": org_id, "created_at": datetime.now(timezone.utc)}}, upsert=True)
+    XERO_MODE = os.environ.get("XERO_MODE", "mock").lower()
+    if XERO_MODE == "live":
+        client_id = os.environ.get("XERO_CLIENT_ID")
+        redirect_uri = f"{APP_URL}/api/connections/xero/oauth/callback"
+        scopes = "accounting.transactions.read accounting.contacts.read accounting.settings.read offline_access openid profile email"
+        params = {
+            "response_type": "code",
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "scope": scopes,
+            "state": state,
+        }
+        # Build URL
+        base = "https://login.xero.com/identity/connect/authorize"
+        from urllib.parse import urlencode
+        auth_url = f"{base}?{urlencode(params)}"
+        return {"auth_url": auth_url}
+    # mock
     return {"auth_url": f"/api/mock/xero/consent?state={state}"}
 
 @api.get("/mock/xero/consent")
