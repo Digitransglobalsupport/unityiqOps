@@ -749,12 +749,129 @@ class FinanceRefreshBody(BaseModel):
     org_id: str
     _from: str | None = None
     to: str | None = None
+    sources: List[str] | None = None
+
+async def run_xero_backfill(org_id: str, tenant_id: str, date_from: str, date_to: str, job_id: str):
+    # Update job running
+    await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"status": "running", "phase": "start", "started_at": datetime.now(timezone.utc)}}, upsert=True)
+    counts = {"ar": 0, "ap": 0, "contacts": 0}
+    try:
+        # AR (ACCREC)
+        await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"phase": "fetch_ar"}})
+        where = f"Type==\"ACCREC\" && Date>=Date(\"{date_from}\") && Date<=Date(\"{date_to}\")"
+        page = 1
+        while page <= 2:  # guard pages for preview
+            data = await xero_request(org_id, tenant_id, "/api.xro/2.0/Invoices", params={"where": where, "page": page})
+            invs = data.get("Invoices", [])
+            if not invs:
+                break
+            docs = []
+            for inv in invs:
+                docs.append({
+                    "org_id": org_id,
+                    "vendor": "xero",
+                    "type": "AR",
+                    "invoice_id": inv.get("InvoiceID"),
+                    "date": inv.get("DateString") or inv.get("Date"),
+                    "due_date": inv.get("DueDateString") or inv.get("DueDate"),
+                    "amount": inv.get("Total"),
+                    "status": inv.get("Status"),
+                    "contact": (inv.get("Contact") or {}).get("Name"),
+                })
+            if docs:
+                await db.finance_lines.insert_many(docs)
+                counts["ar"] += len(docs)
+            page += 1
+        # AP (ACCPAY)
+        await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"phase": "fetch_ap"}})
+        where_ap = f"Type==\"ACCPAY\" && Date>=Date(\"{date_from}\") && Date<=Date(\"{date_to}\")"
+        page = 1
+        while page <= 2:
+            data = await xero_request(org_id, tenant_id, "/api.xro/2.0/Invoices", params={"where": where_ap, "page": page})
+            invs = data.get("Invoices", [])
+            if not invs:
+                break
+            docs = []
+            for inv in invs:
+                docs.append({
+                    "org_id": org_id,
+                    "vendor": "xero",
+                    "type": "AP",
+                    "invoice_id": inv.get("InvoiceID"),
+                    "date": inv.get("DateString") or inv.get("Date"),
+                    "due_date": inv.get("DueDateString") or inv.get("DueDate"),
+                    "amount": inv.get("Total"),
+                    "status": inv.get("Status"),
+                    "contact": (inv.get("Contact") or {}).get("Name"),
+                })
+            if docs:
+                await db.finance_lines.insert_many(docs)
+                counts["ap"] += len(docs)
+            page += 1
+        # Contacts
+        await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"phase": "fetch_contacts"}})
+        page = 1
+        while page <= 2:
+            data = await xero_request(org_id, tenant_id, "/api.xro/2.0/Contacts", params={"page": page})
+            contacts = data.get("Contacts", [])
+            if not contacts:
+                break
+            docs = []
+            for c in contacts:
+                docs.append({
+                    "org_id": org_id,
+                    "vendor": "xero",
+                    "contact_id": c.get("ContactID"),
+                    "name": c.get("Name"),
+                    "is_customer": c.get("IsCustomer"),
+                    "is_supplier": c.get("IsSupplier"),
+                    "email": c.get("EmailAddress"),
+                })
+            if docs:
+                await db.finance_contacts.insert_many(docs)
+                counts["contacts"] += len(docs)
+            page += 1
+        # finish
+        await db.connections.update_one({"org_id": org_id, "vendor": "xero"}, {"$set": {"last_sync_at": datetime.now(timezone.utc).isoformat(), "updated_at": datetime.now(timezone.utc)}})
+        await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"status": "done", "counts": counts, "finished_at": datetime.now(timezone.utc)}})
+    except HTTPException as e:
+        await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"status": "error", "error": e.detail, "finished_at": datetime.now(timezone.utc)}})
+        return
+    except Exception as e:
+        await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"status": "error", "error": str(e), "finished_at": datetime.now(timezone.utc)}})
+        return
 
 @api.post("/ingest/finance/refresh")
-async def finance_refresh(body: Dict[str, Any], ctx: RequestContext = Depends(require_role("ANALYST"))):
-    org_id = body.get("org_id")
+async def finance_refresh(body: FinanceRefreshBody, ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = body.org_id
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
+    sources = body.sources or ["csv"]
+    # If Xero selected and live connected, enqueue job and run async backfill for 3 months
+    if "xero" in sources:
+        conn = await db.connections.find_one({"org_id": org_id, "vendor": "xero"})
+        if not conn:
+            raise HTTPException(status_code=400, detail={"code":"not_connected"})
+        tenant_id = conn.get("default_tenant_id") or ((conn.get("tenants") or [{}])[0].get("tenantId"))
+        if not tenant_id:
+            raise HTTPException(status_code=400, detail={"code":"tenant_not_found"})
+        # compute last 3 full months
+        today = datetime.now(timezone.utc)
+        last = datetime(today.year, today.month, 1, tzinfo=timezone.utc) - timedelta(days=1)
+        first = datetime(last.year, last.month, 1, tzinfo=timezone.utc) - timedelta(days=60)
+        date_from = (body._from or first.date().isoformat())
+        date_to = (body.to or last.date().isoformat())
+        job_id = str(uuid.uuid4())
+        await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"org_id": org_id, "job_id": job_id, "type": "finance", "status": "queued", "phase": "queued", "created_at": datetime.now(timezone.utc)}}, upsert=True)
+        import asyncio
+        asyncio.create_task(run_xero_backfill(org_id, tenant_id, date_from, date_to, job_id))
+        await audit_log_entry(org_id, ctx.user_id, "finance_refresh", "ingest", {"job_id": job_id, "source": "xero"})
+        return {"job_id": job_id, "status": "queued"}
+    # CSV fallback (existing)
+    job_id = str(uuid.uuid4())
+    await db.sync_jobs.insert_one({"org_id": org_id, "job_id": job_id, "type": "finance", "status": "ok", "started_at": datetime.now(timezone.utc), "finished_at": datetime.now(timezone.utc), "meta": body.model_dump()})
+    await audit_log_entry(org_id, ctx.user_id, "finance_refresh", "ingest", {"job_id": job_id, "source": "csv"})
+    return {"job_id": job_id, "status": "ok"}
 
 @api.get("/sync-jobs/{job_id}")
 async def get_sync_job(job_id: str, ctx: RequestContext = Depends(require_role("ANALYST"))):
