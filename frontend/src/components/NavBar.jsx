@@ -20,7 +20,13 @@ export default function NavBar() {
         <Link data-testid="nav-dev-emails-link" to="/dev/emails" className="text-sm text-gray-300 hover:text-white">Dev Emails</Link>
         {(["ADMIN","OWNER"].includes(role||"")) && (
           <>
-            <Link data-testid="nav-connections-link" to="/connections" className="text-sm text-gray-300 hover:text-white">Connections</Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="text-sm text-gray-300 hover:text-white">Connections</DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-white text-gray-900 p-1 rounded shadow">
+                <DropdownMenuItem onClick={async ()=>{ try { const { data } = await api.post('/connections/xero/oauth/start', { org_id: currentOrgId }); window.location.href = data.auth_url; } catch(e) { alert(e?.response?.data?.detail?.code || e?.response?.data?.detail || 'Failed to start Xero'); }}}>Connect to Xero</DropdownMenuItem>
+                <DropdownMenuItem onClick={()=>{ window.location.href = '/connections'; }}>Manage connections…</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link data-testid="nav-settings-link" to="/settings" className="text-sm text-gray-300 hover:text-white">Settings</Link>
           </>
         )}
