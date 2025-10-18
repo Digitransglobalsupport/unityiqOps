@@ -853,10 +853,15 @@ async def connections_status(org_id: str, ctx: RequestContext = Depends(require_
     if ctx.org_id != org_id:
         raise HTTPException(status_code=400, detail="Org mismatch")
     conn = await db.connections.find_one({"org_id": org_id, "vendor": "xero"}, {"_id": 0})
+    errors = []
+    err = await db.connection_errors.find_one({"org_id": org_id, "vendor": "xero"}, {"_id": 0})
+    if err:
+        errors.append({"code": err.get("code"), "message": err.get("message"), "ts": err.get("ts")})
     tenants = []
-    if conn and conn.get("tenant_id"):
-        tenants = [{"tenant_id": conn["tenant_id"], "name": "Alpha Ltd"}]
-    return {"xero": {"connected": bool(conn), "last_sync_at": (conn or {}).get("updated_at"), "tenants": tenants}}
+    if conn:
+        raw = conn.get("tenants") or []
+        tenants = [{"tenant_id": t.get("tenantId"), "tenant_type": t.get("tenantType"), "name": t.get("tenantName") or t.get("tenantId")} for t in raw]
+    return {"xero": {"connected": bool(conn), "last_sync_at": (conn or {}).get("last_sync_at") or (conn or {}).get("updated_at"), "tenants": tenants, "default_tenant_id": (conn or {}).get("default_tenant_id"), "errors": errors}}
 
 
 # --- Xero live helpers ---
