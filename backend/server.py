@@ -604,6 +604,69 @@ async def mock_xero_consent(state: str, ctx: RequestContext = Depends(require_ro
     from fastapi.responses import HTMLResponse
     st = await db.oauth_states.find_one({"state": state})
     if not st:
+
+@api.get("/connections/xero/oauth/callback")
+async def xero_callback_get(code: str | None = None, state: str | None = None):
+    # Live callback (Xero redirects with code+state)
+    XERO_MODE = os.environ.get("XERO_MODE", "mock").lower()
+    if XERO_MODE != "live":
+        # allow mock post handler to operate
+        return RedirectResponse(url=f"/onboarding?connected=1")
+    if not code or not state:
+        raise HTTPException(status_code=400, detail="Missing code/state")
+    st = await db.oauth_states.find_one({"state": state})
+    if not st:
+        raise HTTPException(status_code=400, detail="Invalid state")
+    org_id = st.get("org_id")
+    token_url = "https://identity.xero.com/connect/token"
+    client_id = os.environ.get("XERO_CLIENT_ID"); client_secret = os.environ.get("XERO_CLIENT_SECRET")
+    redirect_uri = f"{APP_URL}/api/connections/xero/oauth/callback"
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=float(os.environ.get("XERO_FETCH_TIMEOUT_SEC", "25"))) as client:
+            data = {
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "client_id": client_id,
+                "client_secret": client_secret,
+            }
+            tok = await client.post(token_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+            tok.raise_for_status()
+            td = tok.json()
+            access_token = td.get("access_token"); refresh_token = td.get("refresh_token"); expires_in = int(td.get("expires_in", 1800))
+            # fetch tenants
+            conns = await client.get("https://api.xero.com/connections", headers={"Authorization": f"Bearer {access_token}"})
+            conns.raise_for_status()
+            tenants = conns.json()
+            enc_access = aesgcm_encrypt_for_org(org_id, access_token)
+            enc_refresh = aesgcm_encrypt_for_org(org_id, refresh_token)
+            await db.connections.update_one(
+                {"org_id": org_id, "vendor": "xero"},
+                {"$set": {
+                    "org_id": org_id,
+                    "vendor": "xero",
+                    "tokens": {"access": enc_access, "refresh": enc_refresh},
+                    "expires_at": (datetime.now(timezone.utc) + timedelta(seconds=expires_in)).isoformat(),
+                    "tenants": tenants,
+                    "updated_at": datetime.now(timezone.utc)
+                }},
+                upsert=True
+            )
+            await audit_log_entry(org_id, None, "connect", "xero", {"tenants": [t.get("tenantId") for t in tenants]})
+    except httpx.HTTPError as e:
+        await db.connection_errors.update_one({"org_id": org_id, "vendor": "xero"}, {"$set": {"org_id": org_id, "vendor": "xero", "code": "oauth_exchange_failed", "message": str(e), "ts": datetime.now(timezone.utc)}}, upsert=True)
+        raise HTTPException(status_code=400, detail="OAuth exchange failed")
+    return RedirectResponse(url="/connections?connected=1", status_code=302)
+
+@api.post("/connections/xero/tenant")
+async def xero_select_tenant(payload: Dict[str, Any], ctx: RequestContext = Depends(require_role("ADMIN"))):
+    org_id = payload.get("org_id"); tenant_id = payload.get("tenant_id")
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    await db.connections.update_one({"org_id": org_id, "vendor": "xero"}, {"$set": {"default_tenant_id": tenant_id, "updated_at": datetime.now(timezone.utc)}})
+    return {"ok": True}
+
         return HTMLResponse("Invalid or expired state", status_code=400)
     html = f"""
     <html><body style='font-family: sans-serif;'>
