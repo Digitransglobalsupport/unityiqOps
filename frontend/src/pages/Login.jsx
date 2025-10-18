@@ -14,9 +14,10 @@ export default function Login() {
     setError(null);
     try {
       await login(email, password);
-      navigate("/");
+      navigate("/dashboard/finance");
     } catch (e) {
-      setError(e?.response?.data?.detail || "Login failed");
+      const msg = e?.response?.data?.detail || e?.message || "Login failed";
+      setError(msg);
     }
   };
 
