@@ -54,6 +54,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config || {};
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      // Do not attempt refresh on auth endpoints or when no refresh token exists
+      const url = (originalRequest.url || "");
+      const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/signup") || url.includes("/auth/verify") || url.includes("/auth/reset");
+      if (isAuthEndpoint || !tokenStore.refresh) {
+        return Promise.reject(error);
+      }
       if (isRefreshing) {
         return new Promise((resolve) => {
           addRefreshSubscriber((newToken) => {
@@ -66,7 +72,6 @@ api.interceptors.response.use(
       isRefreshing = true;
       try {
         const refresh_token = tokenStore.refresh;
-        if (!refresh_token) throw new Error("No refresh token");
         const { data } = await api.post("/auth/refresh", { refresh_token });
         tokenStore.access = data.access_token;
         tokenStore.refresh = data.refresh_token;
