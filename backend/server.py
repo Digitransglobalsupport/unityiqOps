@@ -975,8 +975,18 @@ async def dashboard_finance(org_id: str, ctx: RequestContext = Depends(require_r
         raise HTTPException(status_code=400, detail="Org mismatch")
     score = await db.synergy_scores.find_one({"org_id": org_id}, {"_id": 0})
     companies = await db.companies.find({"org_id": org_id, "is_active": True}, {"_id": 0}).to_list(50)
-    # Pull data health warnings from last CSV ingest
-    health = await db.data_health.find_one({"org_id": org_id}, {"_id": 0})
+    # Compute trends/DSO from ingested AR/AP where available
+    trends_calc = await compute_trends_from_lines(org_id, periods=6)
+    # Pull data health and connection state
+    health = await db.data_health.find_one({"org_id": org_id}, {"_id": 0}) or {}
+    conn = await db.connections.find_one({"org_id": org_id, "vendor": "xero"}, {"_id": 0}) or {}
+    conn_err = await db.connection_errors.find_one({"org_id": org_id, "vendor": "xero"}, {"_id": 0}) or {}
+    conn_pill = None
+    if conn:
+        last = conn.get("last_sync_at") or conn.get("updated_at")
+        conn_pill = {"provider": "xero", "connected": True, "last_sync_at": last}
+    if conn_err:
+        conn_pill = {"provider": "xero", "connected": bool(conn), "error": {"code": conn_err.get("code"), "message": conn_err.get("message")}}
     # Customer lens (if CRM data exists)
     opps_doc = await db.cross_sell_opps.find_one({"org_id": org_id}, {"_id": 0})
     masters_doc = await db.customer_master.find_one({"org_id": org_id}, {"_id": 0})
@@ -993,23 +1003,24 @@ async def dashboard_finance(org_id: str, ctx: RequestContext = Depends(require_r
                 for o in recent
             ]
         }
-    # Add percentile banding for demo
-    demo_companies = companies or [
-        {"company_id": "CO1", "name": "Alpha Ltd", "currency": "GBP", "kpis": {"revenue": 650000, "gm_pct": 44.0, "opex": 240000, "ebitda": 190000, "dso_days": 42}, "score": {"s_fin": 78}, "percentile": 82},
-        {"company_id": "CO2", "name": "Beta BV", "currency": "EUR", "kpis": {"revenue": 600000, "gm_pct": 38.5, "opex": 280000, "ebitda": 40000, "dso_days": 53}, "score": {"s_fin": 65}, "percentile": 55}
-    ]
+    # KPIs based on trends where available
+    dso_days = trends_calc.get("dso_days")
+    revenue_latest = (trends_calc.get("series") or [{"points":[]}])[0]["points"][-1][1] if (trends_calc.get("series") and trends_calc["series"][0]["points"]) else None
+    kpis = {"revenue": revenue_latest or 0, "gm_pct": None, "opex": None, "ebitda": None, "dso_days": dso_days or None}
     return {
         "org_id": org_id,
-        "period": {"from": "2025-07-01", "to": "2025-09-30"},
-        "last_sync_at": datetime.now(timezone.utc).isoformat(),
+        "period": {"from": trends_calc.get("months", [None])[0], "to": (trends_calc.get("months") or [None])[-1]},
+        "last_sync_at": (conn.get("last_sync_at") if conn else None),
         "score": {
             "s_fin": (score or {}).get("s_fin", 72),
             "weights": {"gm": 0.4, "opex": 0.4, "dso": 0.2},
-            "drivers": {"gm_delta_pct": 2.7, "opex_delta_pct": -1.4, "dso_delta_days": -6, "notes": ["GM improving vs prior quarter","DSO trending down 6 days QoQ"]}
+            "drivers": {"gm_delta_pct": 2.7, "opex_delta_pct": -1.4, "dso_delta_days": (dso_days - 53) if dso_days else None, "notes": ["Finance updated from live data" if conn else "Mock demo data"]}
         },
-        "kpis": {"revenue": 1250000, "gm_pct": 41.2, "opex": 520000, "ebitda": 230000, "dso_days": 47},
-        "companies": demo_companies,
+        "kpis": kpis,
+        "series": trends_calc.get("series", []),
+        "companies": companies,
         "data_health": {"stale_days": 0, "missing_fields": [], "warnings": (health or {}).get("warnings", [])},
+        "connection": conn_pill,
         "customer_lens": customer_lens
     }
 
