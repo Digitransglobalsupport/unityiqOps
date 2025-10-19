@@ -702,6 +702,54 @@ async def xero_callback(body: Dict[str, Any]):
             "tenant_id": tenant_id,
             "access_token_enc": enc_access,
             "refresh_token_enc": enc_refresh,
+async def month_key(dt_str: str) -> str:
+    try:
+        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        return f"{dt.year}-{dt.month:02d}"
+    except Exception:
+        return None
+
+async def compute_trends_from_lines(org_id: str, periods: int = 6):
+    # Build last N month keys
+    now = datetime.now(timezone.utc)
+    months = []
+    y, m = now.year, now.month
+    for i in range(periods, 0, -1):
+        mm = m - (periods - i)
+        yy = y
+        while mm <= 0:
+            mm += 12
+            yy -= 1
+        months.append(f"{yy}-{mm:02d}")
+    idx = {k: i for i, k in enumerate(months)}
+    revenue = [0.0] * periods
+    dso_list = []
+    # Pull AR invoices last N months
+    since = months[0] + "-01"
+    cur = db.finance_lines.find({"org_id": org_id, "type": "AR", "date": {"$gte": since}})
+    async for inv in cur:
+        mk = await month_key(inv.get("date") or "")
+        if mk in idx:
+            revenue[idx[mk]] += float(inv.get("amount") or 0.0)
+        # Approx DSO as (due_date - date) days if both present
+        d = inv.get("date"); due = inv.get("due_date")
+        try:
+            if d and due:
+                d0 = datetime.fromisoformat(d.replace("Z", "+00:00"))
+                d1 = datetime.fromisoformat(due.replace("Z", "+00:00"))
+                delta = (d1 - d0).days
+                if 0 < delta < 365:
+                    dso_list.append(delta)
+        except Exception:
+            pass
+    series = [
+        {"kpi": "revenue", "points": [[months[i], round(revenue[i], 2)] for i in range(periods)]},
+    ]
+    # If we want, we could add others as placeholders
+    # Compute simple DSO as average
+    dso_days = round(sum(dso_list) / len(dso_list), 1) if dso_list else None
+    return {"months": months, "series": series, "dso_days": dso_days}
+
             "scopes": ["accounting.reports.read","accounting.transactions.read","accounting.settings.read","offline_access","openid","profile","email"],
             "updated_at": datetime.now(timezone.utc)
         }},
