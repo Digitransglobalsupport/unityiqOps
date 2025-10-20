@@ -707,6 +707,13 @@ async def xero_callback(body: Dict[str, Any]):
             "tenant_id": tenant_id,
             "access_token_enc": enc_access,
             "refresh_token_enc": enc_refresh,
+            "scopes": ["accounting.reports.read","accounting.transactions.read","accounting.settings.read","offline_access","openid","profile","email"],
+            "updated_at": datetime.now(timezone.utc)
+        }},
+        upsert=True
+    )
+    return RedirectResponse(url="/connections?connected=1", status_code=302)
+
 async def month_key(dt_str: str) -> str:
     try:
         dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
