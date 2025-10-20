@@ -1093,16 +1093,8 @@ async def run_xero_backfill(org_id: str, tenant_id: str, date_from: str, date_to
             if docs:
                 await db.finance_lines.insert_many(docs)
                 counts["ar"] += len(docs)
-
-                page += 1
-@api.get("/sync-jobs")
-async def list_sync_jobs(org_id: str, ctx: RequestContext = Depends(require_role("ANALYST"))):
-    if ctx.org_id != org_id:
-        raise HTTPException(status_code=400, detail="Org mismatch")
-    jobs = await db.sync_jobs.find({"org_id": org_id}, {"_id": 0}).sort("created_at", -1).limit(10).to_list(10)
-    return jobs
-
             page += 1
+
         # AP (ACCPAY)
         await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"phase": "fetch_ap"}})
         where_ap = f"Type==\"ACCPAY\" && Date>=Date(\"{date_from}\") && Date<=Date(\"{date_to}\")"
@@ -1129,6 +1121,7 @@ async def list_sync_jobs(org_id: str, ctx: RequestContext = Depends(require_role
                 await db.finance_lines.insert_many(docs)
                 counts["ap"] += len(docs)
             page += 1
+
         # Contacts
         await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"phase": "fetch_contacts"}})
         page = 1
@@ -1152,6 +1145,7 @@ async def list_sync_jobs(org_id: str, ctx: RequestContext = Depends(require_role
                 await db.finance_contacts.insert_many(docs)
                 counts["contacts"] += len(docs)
             page += 1
+
         # finish
         await db.connections.update_one({"org_id": org_id, "vendor": "xero"}, {"$set": {"last_sync_at": datetime.now(timezone.utc).isoformat(), "updated_at": datetime.now(timezone.utc)}})
         await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": {"status": "done", "counts": counts, "finished_at": datetime.now(timezone.utc)}})
