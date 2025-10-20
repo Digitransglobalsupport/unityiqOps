@@ -1514,19 +1514,6 @@ async def checklist_suggest(ctx: RequestContext = Depends(require_role("ANALYST"
         })
     return {"suggestions": suggestions}
 
-    # Validate and ingest BS
-    receivables_map: Dict[Tuple[str, str], float] = {}
-    for r in bs_rows:
-        period = r.get('period', '')
-        if not is_period(period):
-            warnings.append(f"BS invalid period '{period}' - row skipped")
-            continue
-        try:
-            receivables = float(r.get('receivables', '0') or 0)
-        except:
-            warnings.append("BS numeric parse failed - row skipped")
-            continue
-
 # --- Day 2: CRM Ingestion (Mock HubSpot + CSV fallback) ---
 from rapidfuzz import fuzz
 
