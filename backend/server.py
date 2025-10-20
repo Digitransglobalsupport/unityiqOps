@@ -2636,14 +2636,16 @@ async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(re
 
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
-    c.setFont("Helvetica-Bold", 16); c.drawString(50, 800, "Synergy Snapshot")
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, 800, "Synergy Snapshot")
     c.setFont("Helvetica", 10)
     c.drawString(50, 780, f"Org: {org_id}")
     c.drawString(50, 768, f"Period: {body.get('from','-')} to {body.get('to','-')}")
     c.drawString(50, 756, f"Generated: {datetime.now(timezone.utc).isoformat()}")
 
     # Executive Summary
-    c.setFont("Helvetica-Bold", 12); c.drawString(50, 730, "Executive Summary")
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, 730, "Executive Summary")
     c.setFont("Helvetica", 10)
     c.drawString(50, 715, f"Synergy Score (Finance): {finance['score']['s_fin']}")
     c.drawString(50, 703, f"Revenue: £{finance['kpis']['revenue']}  GM%: {finance['kpis']['gm_pct']}  EBITDA: £{finance['kpis']['ebitda']}")
