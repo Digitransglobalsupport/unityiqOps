@@ -956,21 +956,6 @@ async def run_refresh_job(org_id: str, job_id: str, jtype: str):
         await _update_job(org_id, job_id, phase="error")
         track("refresh_error", {"type": jtype, "job_id": job_id, "phase": "ingest", "code": "INTERNAL"})
 
-        params = {
-            "response_type": "code",
-            "client_id": client_id,
-            "redirect_uri": redirect_uri,
-            "scope": scopes,
-            "state": state,
-        }
-        # Build URL
-        base = "https://login.xero.com/identity/connect/authorize"
-        from urllib.parse import urlencode
-        auth_url = f"{base}?{urlencode(params)}"
-        return {"auth_url": auth_url}
-    # mock
-    return {"auth_url": f"/api/mock/xero/consent?state={state}"}
-
 @api.get("/mock/xero/consent")
 async def mock_xero_consent(state: str, ctx: RequestContext = Depends(require_role("ADMIN"))):
     from fastapi.responses import HTMLResponse
