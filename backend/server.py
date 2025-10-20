@@ -2352,10 +2352,10 @@ async def demo_seed(ctx: RequestContext = Depends(require_role("ADMIN"))):
     await db.vendor_master.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": [{"vendor_id": "VN-demosaas", "canonical_name": "Demo SaaS", "companies": ["CO1"], "category": "SaaS", "annual_spend": 18000}], "updated_at": now}}, upsert=True)
     await db.savings_opps.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "items": [{"opportunity_id": str(uuid.uuid4()), "type": "Consolidation", "vendors": ["Demo SaaS"], "companies": ["CO1"], "category": "SaaS", "est_saving": 2700, "status": "open", "owner_user_id": None, "notes": [], "playbook_step": "Consolidate seats", "evidence": {"annual_spend": 18000, "calc": "15%"}, "created_at": now, "updated_at": now}] }}, upsert=True)
     await db.orgs.update_one({"org_id": org_id}, {"$set": {"ui_prefs": {"show_snapshot_banner": True}, "org_flags": {"demo_seeded": True}}}, upsert=True)
-    await audit_log_entry(org_id, ctx.user_id, "seed", "demo", {})
-    return {"ok": True}
     # Seed plan LITE to allow exports in demo
     await db.plans.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "tier": "LITE", "limits": {"companies": 3, "connectors": 1, "exports": True, "alerts": True}, "updated_at": now}}, upsert=True)
+    await audit_log_entry(org_id, ctx.user_id, "seed", "demo", {})
+    return {"ok": True}
 
 
     try:
