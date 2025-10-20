@@ -771,13 +771,7 @@ async def compute_trends_from_lines(org_id: str, periods: int = 6):
     dso_days = round(sum(dso_list) / len(dso_list), 1) if dso_list else None
     return {"months": months, "series": series, "dso_days": dso_days}
 
-            "scopes": ["accounting.reports.read","accounting.transactions.read","accounting.settings.read","offline_access","openid","profile","email"],
-            "updated_at": datetime.now(timezone.utc)
-        }},
-        upsert=True
-    )
-    await audit_log_entry(org_id, None, "connect", "xero", {"tenant_id": tenant_id})
-    return {"connected": True, "tenant_id": tenant_id}
+ 
 
 @api.get("/companies/discover")
 async def companies_discover(org_id: str, ctx: RequestContext = Depends(require_role("ADMIN"))):
