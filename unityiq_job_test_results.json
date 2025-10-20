@@ -1,0 +1,157 @@
+{
+  "summary": {
+    "total_tests": 20,
+    "passed_tests": 15,
+    "success_rate": 75.0
+  },
+  "detailed_results": [
+    {
+      "test": "Setup: VIEWER Email Verified",
+      "success": true,
+      "details": "Email verified successfully",
+      "timestamp": "2025-10-20T22:34:05.165257"
+    },
+    {
+      "test": "Setup: VIEWER Login",
+      "success": true,
+      "details": "Login successful for viewer_1760999643@example.com",
+      "timestamp": "2025-10-20T22:34:05.426543"
+    },
+    {
+      "test": "Setup: ANALYST Email Verified",
+      "success": true,
+      "details": "Email verified successfully",
+      "timestamp": "2025-10-20T22:34:06.761451"
+    },
+    {
+      "test": "Setup: ANALYST Login",
+      "success": true,
+      "details": "Login successful for analyst_1760999645@example.com",
+      "timestamp": "2025-10-20T22:34:07.024640"
+    },
+    {
+      "test": "Setup: Org1 Created",
+      "success": true,
+      "details": "Org 'TestOrg1_1760999647' created with ID 65cb19b6-58f7-453f-b0e0-b01426231539",
+      "timestamp": "2025-10-20T22:34:07.100913"
+    },
+    {
+      "test": "Setup: Org2 Created",
+      "success": true,
+      "details": "Org 'TestOrg2_1760999647' created with ID 236723cd-9177-4e12-a729-429b109d8624",
+      "timestamp": "2025-10-20T22:34:07.140460"
+    },
+    {
+      "test": "Setup: VIEWER Invited to Org1",
+      "success": true,
+      "details": "Invited viewer_1760999643@example.com as VIEWER to TestOrg1_1760999647",
+      "timestamp": "2025-10-20T22:34:07.194729"
+    },
+    {
+      "test": "Setup: VIEWER Accepted Invite",
+      "success": true,
+      "details": "Invite accepted by viewer_1760999643@example.com",
+      "timestamp": "2025-10-20T22:34:08.265577"
+    },
+    {
+      "test": "RBAC: VIEWER Cannot Start Job",
+      "success": true,
+      "details": "VIEWER correctly denied sync-jobs/start access",
+      "timestamp": "2025-10-20T22:34:08.344538"
+    },
+    {
+      "test": "RBAC: ANALYST Can Start Job",
+      "success": false,
+      "details": "Failed: {'status_code': 500, 'text': 'Internal Server Error', 'actual_status': 500, 'expected_status': 202}",
+      "timestamp": "2025-10-20T22:34:08.401666"
+    },
+    {
+      "test": "RBAC: VIEWER Can Get Latest",
+      "success": true,
+      "details": "VIEWER can access latest job",
+      "timestamp": "2025-10-20T22:34:08.438988"
+    },
+    {
+      "test": "Rate Limit: Mutations Allowed",
+      "success": false,
+      "details": "Too few mutations succeeded: 0/3",
+      "timestamp": "2025-10-20T22:34:08.853458"
+    },
+    {
+      "test": "Rate Limit: Reads Allowed",
+      "success": true,
+      "details": "Read rate limit working: 5/5 succeeded",
+      "timestamp": "2025-10-20T22:34:09.561054"
+    },
+    {
+      "test": "Idempotency: First Job Start",
+      "success": false,
+      "details": "Failed: {'status_code': 500, 'text': 'Internal Server Error', 'actual_status': 500, 'expected_status': 202}",
+      "timestamp": "2025-10-20T22:34:09.598951"
+    },
+    {
+      "test": "Phase Progression: Prerequisites",
+      "success": false,
+      "details": "No job_id provided",
+      "timestamp": "2025-10-20T22:34:09.598989"
+    },
+    {
+      "test": "Latest Helper: Without Type Filter",
+      "success": true,
+      "details": "Latest job found: JOB_3c5b2615-2ca7-4485-9331-04cb9c4e896d",
+      "timestamp": "2025-10-20T22:34:09.636160"
+    },
+    {
+      "test": "Latest Helper: With Type Filter",
+      "success": true,
+      "details": "Latest all_refresh job found: JOB_e2404d7a-61e1-491a-9879-44dde5993e5b",
+      "timestamp": "2025-10-20T22:34:09.674559"
+    },
+    {
+      "test": "Errors Array: No Errors Found",
+      "success": true,
+      "details": "No errors in job (good)",
+      "timestamp": "2025-10-20T22:34:09.716802"
+    },
+    {
+      "test": "Multi-tenant Safety: Cross-org Access Denied",
+      "success": true,
+      "details": "Correctly returned 404 for cross-org job access",
+      "timestamp": "2025-10-20T22:34:09.792622"
+    },
+    {
+      "test": "Telemetry: Job Started",
+      "success": false,
+      "details": "Failed to start job: {'status_code': 500, 'text': 'Internal Server Error', 'actual_status': 500, 'expected_status': 202}",
+      "timestamp": "2025-10-20T22:34:09.831663"
+    }
+  ],
+  "test_data": {
+    "users": {
+      "viewer_1760999643@example.com": {
+        "email": "viewer_1760999643@example.com",
+        "password": "ViewerPass123!",
+        "role": "VIEWER",
+        "verified": true
+      },
+      "analyst_1760999645@example.com": {
+        "email": "analyst_1760999645@example.com",
+        "password": "AnalystPass123!",
+        "role": "ANALYST",
+        "verified": true
+      }
+    },
+    "orgs": {
+      "TestOrg1_1760999647": {
+        "org_id": "65cb19b6-58f7-453f-b0e0-b01426231539",
+        "name": "TestOrg1_1760999647",
+        "owner": "analyst_1760999645@example.com"
+      },
+      "TestOrg2_1760999647": {
+        "org_id": "236723cd-9177-4e12-a729-429b109d8624",
+        "name": "TestOrg2_1760999647",
+        "owner": "viewer_1760999643@example.com"
+      }
+    }
+  }
+}
