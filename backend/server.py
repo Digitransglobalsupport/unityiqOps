@@ -838,6 +838,120 @@ async def xero_oauth_start(body: Dict[str, Any], ctx: RequestContext = Depends(r
         client_id = os.environ.get("XERO_CLIENT_ID")
         redirect_uri = f"{APP_URL}/api/connections/xero/oauth/callback"
         scopes = "accounting.transactions.read accounting.contacts.read accounting.settings.read offline_access openid profile email"
+# --- Job Monitor & Run Now (UnityIQ) ---
+from fastapi import Header
+
+ALLOWED_JOB_TYPES = {"all_refresh", "finance_refresh", "crm_refresh", "spend_refresh"}
+ACTIVE_PHASES = ["queued", "discover", "ingest", "metrics", "alerts"]
+READ_LIMIT_PER_MIN = 60
+MUTATE_LIMIT_PER_MIN = 10
+
+class SyncStartBody(BaseModel):
+    org_id: str
+    type: str
+
+async def _now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+async def _job_public(job: Dict[str, Any]) -> Dict[str, Any]:
+    j = dict(job)
+    j.pop("_id", None)
+    return j
+
+async def _append_error(org_id: str, job_id: str, phase: str, code: str, message: str, details: Dict[str, Any] | None = None):
+    err = {"phase": phase, "code": code, "message": message, "at": await _now_iso(), "details": (details or {})}
+    await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$push": {"errors": {"$each": [err], "$position": 0}}, "$set": {"updated_at": datetime.now(timezone.utc)}})
+
+async def _update_job(org_id: str, job_id: str, **fields):
+    fields.setdefault("updated_at", datetime.now(timezone.utc))
+    await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": fields})
+
+@api.post("/sync-jobs/start")
+async def sync_jobs_start(body: SyncStartBody, ctx: RequestContext = Depends(require_role("ANALYST"))):
+    # Rate limit
+    rate_limit(f"sync_start:{ctx.org_id}", MUTATE_LIMIT_PER_MIN, 60)
+    if ctx.org_id != body.org_id:
+        raise HTTPException(status_code=400, detail={"code": "ORG_MISMATCH"})
+    if body.type not in ALLOWED_JOB_TYPES:
+        raise HTTPException(status_code=400, detail={"code": "INVALID_TYPE"})
+    # Idempotent: return existing active
+    existing = await db.sync_jobs.find_one({"org_id": body.org_id, "type": body.type, "phase": {"$nin": ["done", "error"]}}, {"_id": 0})
+    if existing:
+        await audit_log_entry(body.org_id, ctx.user_id, "sync_job_start", "sync_job", {"type": body.type, "job_id": existing.get("job_id"), "status": "existing"})
+        return JSONResponse(status_code=202, content={"status": "existing", "job": existing})
+    # Create new job
+    job_id = "JOB_" + str(uuid.uuid4())
+    now = datetime.now(timezone.utc)
+    eta = 180 if body.type == "all_refresh" else 120
+    job = {
+        "job_id": job_id,
+        "org_id": body.org_id,
+        "type": body.type,
+        "phase": "queued",
+        "progress": 0.0,
+        "eta_sec": eta,
+        "started_at": now,
+        "updated_at": now,
+        "completed_at": None,
+        "created_by": ctx.user_id,
+        "errors": [],
+        "meta": {"subcounts": {}}
+    }
+    await db.sync_jobs.insert_one(job)
+    await audit_log_entry(body.org_id, ctx.user_id, "sync_job_start", "sync_job", {"type": body.type, "job_id": job_id, "status": "started"})
+    track("refresh_start", {"type": body.type, "job_id": job_id})
+    # Kick async worker
+    import asyncio
+    asyncio.create_task(run_refresh_job(body.org_id, job_id, body.type))
+    return JSONResponse(status_code=202, content={"status": "started", "job": await _job_public(job)})
+
+@api.get("/sync-jobs/latest")
+async def sync_jobs_latest(org_id: str, type: Optional[str] = None, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    rate_limit(f"sync_latest:{ctx.org_id}", READ_LIMIT_PER_MIN, 60)
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    q = {"org_id": org_id}
+    if type:
+        q["type"] = type
+    job = await db.sync_jobs.find(q, {"_id": 0}).sort("updated_at", -1).limit(1).to_list(1)
+    return (job[0] if job else None) or {}
+
+@api.get("/sync-jobs/{job_id}")
+async def sync_job_get(job_id: str, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    rate_limit(f"sync_get:{ctx.org_id}", READ_LIMIT_PER_MIN, 60)
+    job = await db.sync_jobs.find_one({"org_id": ctx.org_id, "job_id": job_id}, {"_id": 0})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+async def run_refresh_job(org_id: str, job_id: str, jtype: str):
+    import asyncio
+    try:
+        # discover
+        await _update_job(org_id, job_id, phase="discover", progress=0.10, eta_sec=170)
+        await asyncio.sleep(0.5)
+        # ingest (simulate batches)
+        pct = 0.10
+        await _update_job(org_id, job_id, phase="ingest")
+        for i in range(1, 8):  # 7 bumps to ~0.7
+            pct = 0.10 + i * ((0.70 - 0.10)/7)
+            remain = max(30, 170 - i*15)
+            await _update_job(org_id, job_id, progress=round(pct, 2), eta_sec=remain)
+            await asyncio.sleep(0.5)
+        # metrics
+        await _update_job(org_id, job_id, phase="metrics", progress=0.90, eta_sec=20)
+        await asyncio.sleep(0.5)
+        # alerts
+        await _update_job(org_id, job_id, phase="alerts", progress=0.98, eta_sec=8)
+        await asyncio.sleep(0.5)
+        # done
+        await _update_job(org_id, job_id, phase="done", progress=1.0, eta_sec=0, completed_at=datetime.now(timezone.utc))
+        track("refresh_done", {"type": jtype, "job_id": job_id, "duration_sec": 60, "had_errors": False})
+    except Exception as e:
+        await _append_error(org_id, job_id, phase="ingest", code="INTERNAL", message=str(e))
+        await _update_job(org_id, job_id, phase="error")
+        track("refresh_error", {"type": jtype, "job_id": job_id, "phase": "ingest", "code": "INTERNAL"})
+
         params = {
             "response_type": "code",
             "client_id": client_id,
