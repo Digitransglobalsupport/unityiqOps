@@ -2438,6 +2438,30 @@ async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(re
         y -= 12
         if y < 100: c.showPage(); y = 780
 
+
+    # 30-Day Action Plan (Checklist)
+    c.setFont("Helvetica-Bold", 12); c.drawString(50, 420, "30-Day Action Plan")
+    c.setFont("Helvetica", 10)
+    # Fetch open checklist items
+    try:
+        checklist = await db.checklist_items.find({"org_id": org_id, "status": "open"}, {"_id": 0}).sort("updated_at", -1).to_list(12)
+    except Exception:
+        checklist = []
+    y = 405
+    for it in checklist[:10]:
+        line = f"- {it.get('title','')}"
+        owner = it.get('owner_user_id')
+        due = it.get('due_date')
+        if owner:
+            line += f"  (Owner: {owner})"
+        if due:
+            line += f"  (Due: {due})"
+        c.drawString(60, y, line[:95])
+        y -= 12
+        if y < 80:
+            c.showPage(); y = 780
+            c.setFont("Helvetica", 10)
+
     # Footer with configurable assumptions
     cfg = await db.org_settings.find_one({"org_id": org_id}) or {}
     savings = cfg.get("savings") or {"volume_pct": 8, "saas_pct": 15, "tail_threshold": 300}
