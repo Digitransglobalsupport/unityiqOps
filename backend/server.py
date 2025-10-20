@@ -281,6 +281,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Health endpoints (must come after app init)
 @app.get("/api/health")
@@ -290,9 +292,6 @@ def health():
 @app.get("/health")
 def health_plain():
     return {"ok": True}
-
-    allow_headers=["*"],
-)
 
 # --- Telemetry (no-op logger) ---
 def track(event: str, props: Dict[str, Any] | None = None) -> None:
