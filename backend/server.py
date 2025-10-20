@@ -296,7 +296,7 @@ app.add_middleware(
 # --- Telemetry (no-op logger) ---
 def track(event: str, props: Dict[str, Any] | None = None) -> None:
     try:
-        logging.getLogger("telemetry").info(f"event=%s props=%s", event, props or {})
+        logging.getLogger("telemetry").info("event=%s props=%s", event, props or {})
     except Exception:
         pass
 
@@ -883,7 +883,7 @@ async def xero_callback_get(code: str | None = None, state: str | None = None):
     XERO_MODE = os.environ.get("XERO_MODE", "mock").lower()
     if XERO_MODE != "live":
         # allow mock post handler to operate
-        return RedirectResponse(url=f"/onboarding?connected=1")
+        return RedirectResponse(url="/onboarding?connected=1")
     if not code or not state:
         raise HTTPException(status_code=400, detail="Missing code/state")
     st = await db.oauth_states.find_one({"state": state})
@@ -1915,7 +1915,6 @@ async def ingest_spend_csv(org_id: str = Form(...), spend: UploadFile | None = F
 
     # Write spend_lines
     to_insert = []
-    from datetime import date as _date
     def valid_date(s: str) -> bool:
         try:
             y,m,d = [int(x) for x in (s or '').split('-')]
@@ -2024,7 +2023,6 @@ async def spend_refresh(body: Dict[str, Any], ctx: RequestContext = Depends(requ
             category_by_vendor[vid] = ln.get("category")
 
     # Annualize based on range days (approx)
-    from datetime import date as _date
     def days_between(a: str, b: str) -> int:
         try:
             y1,m1,d1 = [int(x) for x in a.split('-')]; y2,m2,d2 = [int(x) for x in b.split('-')]
@@ -2671,7 +2669,7 @@ async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(re
     # Top Vendor Savings Table
     c.setFont("Helvetica-Bold", 12); c.drawString(50, y-10, "Top Vendor Savings")
     y -= 25; c.setFont("Helvetica-Bold", 10)
-    c.drawString(50, y, "Vendors"); c.drawString(250, y, "Companies"); c.drawString(400, y, "Est £/yr");
+    c.drawString(50, y, "Vendors"); c.drawString(250, y, "Companies"); c.drawString(400, y, "Est £/yr")
     c.setFont("Helvetica", 10); y -= 14
     for o in (vendors_open.get('items') or [])[:10]:
         c.drawString(50, y, ", ".join(o.get('vendors', []))[:30])
