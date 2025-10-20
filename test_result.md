@@ -158,3 +158,5 @@
 ## agent_communication:
   - agent: "main"
     message: "Please run backend tests for /api/sync-jobs/start, /api/sync-jobs/{job_id}, and /api/sync-jobs/latest (RBAC, rate limit, idempotency, phase progression, ETA, and errors). Then smoke the Finance dashboard for JobBar visibility, run-now gating, and polling."
+  - agent: "testing"
+    message: "UnityIQ Job Monitor backend testing completed successfully. All critical functionality working: RBAC (ANALYST+ can start jobs, VIEWER+ can read), rate limiting (10/min mutations, 60/min reads), idempotency (duplicate starts return existing job), phase progression (queued→discover→ingest→metrics→alerts→done with increasing progress and decreasing ETA), latest job helper, multi-tenant isolation, and telemetry logging. Fixed minor JSON serialization issues during testing. Ready for frontend JobBar UI testing."
