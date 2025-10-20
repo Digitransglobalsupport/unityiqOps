@@ -1411,6 +1411,27 @@ async def finance_csv(org_id: str = Form(...), pl: UploadFile | None = File(None
         period = r.get('period', '')
         if not is_period(period):
 
+        warnings.append(f"PL invalid period '{period}' - row skipped")
+        continue
+    try:
+        revenue = float(r.get('revenue', '0') or 0)
+        cogs = float(r.get('cogs', '0') or 0)
+        opex = float(r.get('opex', '0') or 0)
+    except Exception:
+        warnings.append("PL numeric parse failed - row skipped")
+        continue
+    company_id = r.get('company_id') or 'UNKNOWN'
+    gm_pct = (revenue - cogs) / revenue * 100 if revenue else 0.0
+    ebitda = revenue - cogs - opex
+    await db.pl.update_one(
+        {"org_id": org_id, "company_id": company_id, "period": period},
+        {"$set": {"org_id": org_id, "company_id": company_id, "period": period, "revenue": revenue, "cogs": cogs, "opex": opex, "gm_pct": gm_pct, "ebitda": ebitda}},
+        upsert=True
+    )
+    ingested["pl"] += 1
+
+# Continue original modules
+
 # --- Synergy Checklist (Phase 2) ---
 class ChecklistItemCreate(BaseModel):
     type: str  # "vendor_saving" | "cross_sell"
