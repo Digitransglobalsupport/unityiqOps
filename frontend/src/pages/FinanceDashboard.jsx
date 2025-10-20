@@ -62,7 +62,7 @@ export default function FinanceDashboard() {
         <h1 className="text-2xl font-semibold">Finance</h1>
         <DataHealthPill connection={data?.connection} onReconnect={reconnect} onRetry={retry} />
       </div>
-      {jobMsg && <div className="text-xs text-gray-600">{jobMsg} {eta && <span>• ETA {eta}</span>}</div>}
+      {jobMsg && <div className="text-xs text-gray-600">{jobMsg} {eta && <span>• ETA {eta}</span>} <span className="ml-2 text-[11px] text-gray-500">Phases: AR → AP → Contacts</span></div>}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="border rounded bg-white p-3">
