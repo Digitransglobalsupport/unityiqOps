@@ -39,15 +39,6 @@ PASSWORD_HASHER = os.environ.get("PASSWORD_HASHER", "bcrypt").lower()  # bcrypt 
 
 # MongoDB connection
 
-@app.get("/api/health")
-def health():
-    return {"ok": True}
-
-@app.get("/health")
-def health_plain():
-    return {"ok": True}
-
-
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
 
