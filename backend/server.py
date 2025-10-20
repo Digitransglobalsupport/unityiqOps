@@ -463,7 +463,7 @@ def render_action_plan_section(c, action_plan: Dict[str, Any], assumptions: Dict
         c.drawCentredString(cx + card_w/2, cy + card_h - 35, "No open action items")
         c.setFont("Helvetica", 10)
         c.setFillColor(colors.grey)
-        c.drawCentredString(cx + card_w/2, cy + card_h - 60, "Use ‘Add from suggestions’ on the dashboard to convert top opportunities")
+        c.drawCentredString(cx + card_w/2, cy + card_h - 60, "Use 'Add from suggestions' on the dashboard to convert top opportunities")
         c.drawCentredString(cx + card_w/2, cy + card_h - 74, "into your 30-Day Action Plan.")
         c.setFillColor(colors.black)
     else:
