@@ -692,30 +692,36 @@ async def xero_select_tenant(payload: Dict[str, Any], ctx: RequestContext = Depe
 
 @api.post("/connections/xero/oauth/callback")
 async def xero_callback(body: Dict[str, Any]):
-    # Store mock tokens encrypted under org_id resolved via state
-    state = body.get("state")
-    st = await db.oauth_states.find_one({"state": state})
-    org_id = (st or {}).get("org_id") or body.get("org_id")
-    code = body.get("code") or "MOCK_CODE"
-    tenant_id = "MOCK_TENANT_1"
-    if not org_id:
-        raise HTTPException(status_code=400, detail="org_id required")
-    enc_access = aesgcm_encrypt_for_org(org_id, f"access::{code}")
-    enc_refresh = aesgcm_encrypt_for_org(org_id, f"refresh::{code}")
-    await db.connections.update_one(
-        {"org_id": org_id, "vendor": "xero"},
-        {"$set": {
-            "org_id": org_id,
-            "vendor": "xero",
-            "tenant_id": tenant_id,
-            "access_token_enc": enc_access,
-            "refresh_token_enc": enc_refresh,
-            "scopes": ["accounting.reports.read","accounting.transactions.read","accounting.settings.read","offline_access","openid","profile","email"],
-            "updated_at": datetime.now(timezone.utc)
-        }},
-        upsert=True
-    )
-    return RedirectResponse(url="/connections?connected=1", status_code=302)
+    try:
+        # Store mock tokens encrypted under org_id resolved via state
+        state = body.get("state")
+        st = await db.oauth_states.find_one({"state": state})
+        org_id = (st or {}).get("org_id") or body.get("org_id")
+        code = body.get("code") or "MOCK_CODE"
+        tenant_id = "MOCK_TENANT_1"
+        if not org_id:
+            raise HTTPException(status_code=400, detail="org_id required")
+        enc_access = aesgcm_encrypt_for_org(org_id, f"access::{code}")
+        enc_refresh = aesgcm_encrypt_for_org(org_id, f"refresh::{code}")
+        await db.connections.update_one(
+            {"org_id": org_id, "vendor": "xero"},
+            {"$set": {
+                "org_id": org_id,
+                "vendor": "xero",
+                "tenant_id": tenant_id,
+                "access_token_enc": enc_access,
+                "refresh_token_enc": enc_refresh,
+                "scopes": ["accounting.reports.read","accounting.transactions.read","accounting.settings.read","offline_access","openid","profile","email"],
+                "updated_at": datetime.now(timezone.utc)
+            }},
+            upsert=True
+        )
+        return RedirectResponse(url="/connections?connected=1", status_code=302)
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Avoid process crash on unexpected errors
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 async def month_key(dt_str: str) -> str:
     try:
