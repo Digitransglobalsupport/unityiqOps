@@ -333,6 +333,204 @@ def format_dd_mmm_yyyy(dstr: str | None) -> str:
             return "—"
         # Expect YYYY-MM-DD
         parts = [int(p) for p in dstr.split("-")]
+# --- Action Plan (Checklist) assembler ---
+async def build_action_plan(org_id: str) -> Dict[str, Any]:
+    # Fetch open and in-progress items for org
+    cur = db.checklist_items.find({"org_id": org_id, "status": {"$in": ["open", "in_progress"]}}, {"_id": 0})
+    items = await cur.to_list(500)
+
+    def to_int(x):
+        try:
+            if x is None:
+                return 0
+            return int(round(float(x)))
+        except Exception:
+            return 0
+    from datetime import datetime as _dt
+
+    def due_key(s: str | None):
+        # Sort null last
+        if not s:
+            return (9999, 12, 31)
+        try:
+            y, m, d = [int(p) for p in s.split("-")]
+            return (y, m, d)
+        except Exception:
+            return (9999, 12, 31)
+
+    # Global sort order: est_value DESC, due_date ASC (null last), created_at ASC
+    items.sort(key=lambda it: (
+        -to_int(it.get("est_value")),
+        due_key(it.get("due_date")),
+        it.get("created_at") or _dt(1970,1,1)
+    ))
+    top = items[:10]
+
+    # Resolve owner names via users collection (path of least resistance)
+    owner_ids = sorted({it.get("owner_user_id") for it in top if it.get("owner_user_id")})
+    owners_map: Dict[str, str] = {}
+    if owner_ids:
+        users = await db.users.find({"user_id": {"$in": owner_ids}}, {"_id": 0, "user_id": 1, "email": 1}).to_list(len(owner_ids))
+        for u in users:
+            owners_map[u["user_id"]] = u.get("email") or u["user_id"]
+
+    # Group by owner
+    buckets: Dict[str | None, Dict[str, Any]] = {}
+    for it in top:
+        oid = it.get("owner_user_id")
+        key = oid if (oid in owners_map) else (oid if oid else None)
+        if key not in buckets:
+            owner_name = owners_map.get(key or "", None)
+            if not owner_name:
+                owner_name = "Unassigned"
+            buckets[key] = {"owner_id": key, "owner_name": owner_name, "total": 0, "items": []}
+        # Normalize type tag
+        t = (it.get("type") or "").lower()
+        if "cross" in t:
+            tag = "cross-sell"
+        elif "vendor" in t:
+            tag = "vendor"
+        elif t == "ops":
+            tag = "ops"
+        else:
+            tag = t or "ops"
+        buckets[key]["items"].append({
+            "title": it.get("title") or "",
+            "type": tag,
+            "due_date": it.get("due_date"),
+            "est_value": to_int(it.get("est_value")),
+            "status": it.get("status") or "open",
+            "ref": ( (it.get("source") or {}).get("ref_id") ) or it.get("ref_id") or None,
+        })
+        buckets[key]["total"] += to_int(it.get("est_value"))
+
+    owners = list(buckets.values())
+    # Preserve within-owner order from global order (already appended in order)
+    # Compute overall total
+    overall_total = sum(o.get("total", 0) for o in owners)
+
+    # Return normalized payload
+    return {
+        "overall_total": overall_total,
+        "owners": owners,
+    }
+
+# --- PDF Rendering for Action Plan ---
+def render_action_plan_section(c, action_plan: Dict[str, Any], assumptions: Dict[str, Any] | None = None):
+    from reportlab.lib import colors
+    # Start new page for clarity
+    c.showPage()
+    # Header
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, 800, "30-Day Action Plan")
+    c.setFont("Helvetica", 9)
+    gen = format_dd_mmm_yyyy(datetime.now(timezone.utc).date().isoformat())
+    subtitle = f"Generated on {gen} • Top open items grouped by owner"
+    c.setFillColor(colors.grey)
+    c.drawString(50, 786, subtitle)
+    c.setFillColor(colors.black)
+
+    # Executive banner pill (right-aligned)
+    total_txt = f"Total Est. Impact: {format_gbp(action_plan.get('overall_total', 0))}"
+    c.setFont("Helvetica-Bold", 10)
+    tw = c.stringWidth(total_txt, "Helvetica-Bold", 10)
+    x2 = 545; y2 = 780
+    pad_x = 10; pad_y = 5
+    c.setFillColorRGB(0.93, 0.96, 1.0)
+    c.roundRect(x2 - tw - 2*pad_x, y2 - 2*pad_y, tw + 2*pad_x, 16, 8, fill=1, stroke=0)
+    c.setFillColorRGB(0.2, 0.4, 0.8)
+    c.drawRightString(x2 - pad_x, y2 - 2, total_txt)
+    c.setFillColor(colors.black)
+
+    y = 760
+
+    owners = action_plan.get("owners", []) or []
+    if not owners:
+        # Empty state card centered
+        c.setFillColor(colors.white)
+        c.setStrokeColor(colors.lightgrey)
+        card_w, card_h = 420, 120
+        cx = 50 + (545 - 50 - card_w) / 2
+        cy = 760 - card_h/2
+        c.roundRect(cx, cy, card_w, card_h, 8, fill=0, stroke=1)
+        c.setFont("Helvetica-Bold", 12)
+        c.drawCentredString(cx + card_w/2, cy + card_h - 35, "No open action items")
+        c.setFont("Helvetica", 10)
+        c.setFillColor(colors.grey)
+        c.drawCentredString(cx + card_w/2, cy + card_h - 60, "Use ‘Add from suggestions’ on the dashboard to convert top opportunities")
+        c.drawCentredString(cx + card_w/2, cy + card_h - 74, "into your 30-Day Action Plan.")
+        c.setFillColor(colors.black)
+    else:
+        # Render each owner group
+        for owner in owners:
+            # Owner header
+            name = owner.get("owner_name") or "Unassigned"
+            total = owner.get("total", 0)
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(50, y, f"{name}")
+            c.setFont("Helvetica", 9)
+            c.setFillColor(colors.grey)
+            c.drawString(50 + 220, y, f"Total: {format_gbp(total)}")
+            c.setFillColor(colors.black)
+            y -= 14
+            # Table header
+            c.setFont("Helvetica-Bold", 9)
+            c.drawString(50, y, "Title")
+            c.drawString(355, y, "Due")
+            c.drawRightString(475, y, "Est £/yr")
+            c.drawString(495, y, "Status")
+            c.drawString(545, y, "Ref")
+            y -= 10
+            c.setFont("Helvetica", 9)
+            for it in owner.get("items", []):
+                title = ellipsize(it.get("title") or "", 60)
+                tag = (it.get("type") or "").lower()
+                if tag:
+                    title = f"{title} • {tag}"
+                due = format_dd_mmm_yyyy(it.get("due_date"))
+                est = it.get("est_value") or 0
+                est_txt = format_gbp(est) if est else "—"
+                status_txt = human_status(it.get("status"))
+                ref = it.get("ref") or "—"
+                c.drawString(50, y, title)
+                c.drawString(355, y, due)
+                c.drawRightString(475, y, est_txt)
+                c.drawString(495, y, status_txt)
+                c.drawString(545, y, str(ref)[:16])
+                y -= 12
+                if y < 100:
+                    # Footnotes before break
+                    c.setFont("Helvetica", 8)
+                    c.setFillColor(colors.grey)
+                    c.drawString(50, 80, "• Estimates shown are annualized and indicative.")
+                    c.drawString(50, 68, "• Items sourced from Vendor Savings, Cross-sell Opportunities, and Manual entries.")
+                    if assumptions:
+                        c.drawString(50, 56, "Action Plan items reflect current savings assumptions.")
+                    c.setFillColor(colors.black)
+                    c.showPage()
+                    y = 780
+                    c.setFont("Helvetica", 9)
+            y -= 8
+            if y < 100:
+                c.setFont("Helvetica", 8)
+                c.setFillColor(colors.grey)
+                c.drawString(50, 80, "• Estimates shown are annualized and indicative.")
+                c.drawString(50, 68, "• Items sourced from Vendor Savings, Cross-sell Opportunities, and Manual entries.")
+                if assumptions:
+                    c.drawString(50, 56, "Action Plan items reflect current savings assumptions.")
+                c.setFillColor(colors.black)
+                c.showPage()
+                y = 780
+
+    # Footnotes at end of section page
+    c.setFont("Helvetica", 8)
+    c.setFillColor(colors.grey)
+    c.drawString(50, 80, "• Estimates shown are annualized and indicative.")
+    c.drawString(50, 68, "• Items sourced from Vendor Savings, Cross-sell Opportunities, and Manual entries.")
+    if assumptions:
+        c.drawString(50, 56, "Action Plan items reflect current savings assumptions.")
+    c.setFillColor(colors.black)
+
         if len(parts) != 3:
             return "—"
         y, m, d = parts
