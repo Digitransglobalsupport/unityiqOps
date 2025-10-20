@@ -1,0 +1,56 @@
+{
+  "summary": {
+    "total_tests": 7,
+    "passed_tests": 6,
+    "success_rate": 85.71428571428571
+  },
+  "detailed_results": [
+    {
+      "test": "User Signup",
+      "success": true,
+      "details": "User action_plan_test_1760997819@example.com created",
+      "timestamp": "2025-10-20T22:03:39.794411"
+    },
+    {
+      "test": "Email Verification",
+      "success": true,
+      "details": "Email verified",
+      "timestamp": "2025-10-20T22:03:40.870016"
+    },
+    {
+      "test": "User Login",
+      "success": true,
+      "details": "Login successful",
+      "timestamp": "2025-10-20T22:03:41.154499"
+    },
+    {
+      "test": "Create Organization",
+      "success": true,
+      "details": "Org created: 8f01fde6-4731-4be7-995d-9362e2eaa37c",
+      "timestamp": "2025-10-20T22:03:41.241377"
+    },
+    {
+      "test": "Demo Data Seed",
+      "success": true,
+      "details": "Demo data seeded with LITE plan",
+      "timestamp": "2025-10-20T22:03:41.328643"
+    },
+    {
+      "test": "Create Checklist Items",
+      "success": true,
+      "details": "Assuming 15 checklist items exist (API endpoint may not be available)",
+      "timestamp": "2025-10-20T22:03:46.837832"
+    },
+    {
+      "test": "Export Entitlement Gate",
+      "success": false,
+      "details": "Export blocked - LITE plan not properly seeded",
+      "timestamp": "2025-10-20T22:03:46.978503"
+    }
+  ],
+  "test_data": {
+    "user_email": "action_plan_test_1760997819@example.com",
+    "org_id": "8f01fde6-4731-4be7-995d-9362e2eaa37c",
+    "checklist_items_count": 0
+  }
+}
