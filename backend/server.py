@@ -2684,36 +2684,28 @@ async def export_snapshot(body: Dict[str, Any], ctx: RequestContext = Depends(re
         if y < 100: c.showPage(); y = 780
 
 
-    # 30-Day Action Plan (Checklist)
-    c.setFont("Helvetica-Bold", 12); c.drawString(50, 420, "30-Day Action Plan")
-    c.setFont("Helvetica", 10)
-    # Fetch open checklist items
-    try:
-        checklist = await db.checklist_items.find({"org_id": org_id, "status": "open"}, {"_id": 0}).sort("updated_at", -1).to_list(12)
-    except Exception:
-        checklist = []
-    y = 405
-    for it in checklist[:10]:
-        line = f"- {it.get('title','')}"
-        owner = it.get('owner_user_id')
-        due = it.get('due_date')
-        if owner:
-            line += f"  (Owner: {owner})"
-        if due:
-            line += f"  (Due: {due})"
-        c.drawString(60, y, line[:95])
-        y -= 12
-        if y < 80:
-            c.showPage(); y = 780
-            c.setFont("Helvetica", 10)
-
-    # Footer with configurable assumptions
+    # 30-Day Action Plan (Checklist) — extended section
+    action_plan = await build_action_plan(org_id)
     cfg = await db.org_settings.find_one({"org_id": org_id}) or {}
-    savings = cfg.get("savings") or {"volume_pct": 8, "saas_pct": 15, "tail_threshold": 300}
+    assumptions = cfg.get("savings") or {"volume_pct": 8, "saas_pct": 15, "tail_threshold": 300}
+
+    render_action_plan_section(c, {"overall_total": action_plan.get("overall_total", 0), "owners": action_plan.get("owners", [])}, assumptions)
+
+    # Footer with configurable assumptions on last page bottom handled by render_action_plan_section; add global footer on final page as well
     c.setFont("Helvetica", 8)
-    c.drawString(50, 50, f"Assumptions: Volume {savings['volume_pct']}%, SaaS {savings['saas_pct']}%, Tail threshold £{savings['tail_threshold']}.")
+    c.drawString(50, 40, f"Assumptions: Volume {assumptions.get('volume_pct',8)}%, SaaS {assumptions.get('saas_pct',15)}%, Tail threshold £{assumptions.get('tail_threshold',300)}.")
+
+    # Finalize PDF
     c.showPage(); c.save()
     buf.seek(0)
+
+    # Telemetry
+    try:
+        count_items = sum(len(o.get("items", [])) for o in action_plan.get("owners", []))
+        track("snapshot_generated", {"action_plan_items": count_items, "action_plan_total": action_plan.get("overall_total", 0)})
+    except Exception:
+        pass
+
     return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=synergy_snapshot.pdf"})
 
 # Token consumption redirects for reset and invite accept (public GET)
