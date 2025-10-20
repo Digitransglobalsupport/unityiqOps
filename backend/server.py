@@ -537,13 +537,6 @@ def render_action_plan_section(c, action_plan: Dict[str, Any], assumptions: Dict
         c.drawString(50, 56, "Action Plan items reflect current savings assumptions.")
     c.setFillColor(colors.black)
 
-        if len(parts) != 3:
-            return "—"
-        y, m, d = parts
-        return f"{d:02d} {MONTHS3[m-1]} {y}"
-    except Exception:
-        return "—"
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
