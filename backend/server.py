@@ -1398,8 +1398,10 @@ async def finance_csv(org_id: str = Form(...), pl: UploadFile | None = File(None
         try:
             if len(s) != 7 or s[4] != '-':
                 return False
-            y = int(s[:4]); m = int(s[5:7]); return 1 <= m <= 12 and 2000 <= y <= 2100
-        except:
+            y = int(s[:4])
+            m = int(s[5:7])
+            return 1 <= m <= 12 and 2000 <= y <= 2100
+        except Exception:
             return False
 
     pl_rows = read_csv(pl)
