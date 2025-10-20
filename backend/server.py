@@ -293,6 +293,53 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Telemetry (no-op logger) ---
+def track(event: str, props: Dict[str, Any] | None = None) -> None:
+    try:
+        logging.getLogger("telemetry").info(f"event=%s props=%s", event, props or {})
+    except Exception:
+        pass
+
+# --- Currency/format helpers ---
+def format_gbp(amount: Any | None) -> str:
+    if amount is None:
+        return "£0"
+    try:
+        val = float(amount)
+    except Exception:
+        return "£0"
+    # Display rule: no pennies unless < 100
+    if abs(val) < 100:
+        return f"£{val:,.2f}".replace(",", ",")
+    else:
+        return f"£{int(round(val)):,}"
+
+def human_status(s: str | None) -> str:
+    if not s:
+        return "Open"
+    s = s.lower()
+    return "In progress" if s in ("in_progress", "in progress") else "Open"
+
+def ellipsize(text: str, max_len: int) -> str:
+    t = text or ""
+    return (t[:max_len-1] + "…") if len(t) > max_len else t
+
+from datetime import date as _date
+MONTHS3 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+def format_dd_mmm_yyyy(dstr: str | None) -> str:
+    try:
+        if not dstr:
+            return "—"
+        # Expect YYYY-MM-DD
+        parts = [int(p) for p in dstr.split("-")]
+        if len(parts) != 3:
+            return "—"
+        y, m, d = parts
+        return f"{d:02d} {MONTHS3[m-1]} {y}"
+    except Exception:
+        return "—"
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
