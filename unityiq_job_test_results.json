@@ -1,156 +1,180 @@
 {
   "summary": {
-    "total_tests": 20,
-    "passed_tests": 15,
-    "success_rate": 75.0
+    "total_tests": 24,
+    "passed_tests": 21,
+    "success_rate": 87.5
   },
   "detailed_results": [
     {
       "test": "Setup: VIEWER Email Verified",
       "success": true,
       "details": "Email verified successfully",
-      "timestamp": "2025-10-20T22:34:05.165257"
+      "timestamp": "2025-10-20T22:35:03.176708"
     },
     {
       "test": "Setup: VIEWER Login",
       "success": true,
-      "details": "Login successful for viewer_1760999643@example.com",
-      "timestamp": "2025-10-20T22:34:05.426543"
+      "details": "Login successful for viewer_1760999701@example.com",
+      "timestamp": "2025-10-20T22:35:03.435492"
     },
     {
       "test": "Setup: ANALYST Email Verified",
       "success": true,
       "details": "Email verified successfully",
-      "timestamp": "2025-10-20T22:34:06.761451"
+      "timestamp": "2025-10-20T22:35:04.787973"
     },
     {
       "test": "Setup: ANALYST Login",
       "success": true,
-      "details": "Login successful for analyst_1760999645@example.com",
-      "timestamp": "2025-10-20T22:34:07.024640"
+      "details": "Login successful for analyst_1760999703@example.com",
+      "timestamp": "2025-10-20T22:35:05.045859"
     },
     {
       "test": "Setup: Org1 Created",
       "success": true,
-      "details": "Org 'TestOrg1_1760999647' created with ID 65cb19b6-58f7-453f-b0e0-b01426231539",
-      "timestamp": "2025-10-20T22:34:07.100913"
+      "details": "Org 'TestOrg1_1760999705' created with ID 03b73479-f949-4ee5-82f8-89de2d243f2d",
+      "timestamp": "2025-10-20T22:35:05.083495"
     },
     {
       "test": "Setup: Org2 Created",
       "success": true,
-      "details": "Org 'TestOrg2_1760999647' created with ID 236723cd-9177-4e12-a729-429b109d8624",
-      "timestamp": "2025-10-20T22:34:07.140460"
+      "details": "Org 'TestOrg2_1760999705' created with ID 9ca744d8-d147-4002-ae0d-9488a3f6b33e",
+      "timestamp": "2025-10-20T22:35:05.125396"
     },
     {
       "test": "Setup: VIEWER Invited to Org1",
       "success": true,
-      "details": "Invited viewer_1760999643@example.com as VIEWER to TestOrg1_1760999647",
-      "timestamp": "2025-10-20T22:34:07.194729"
+      "details": "Invited viewer_1760999701@example.com as VIEWER to TestOrg1_1760999705",
+      "timestamp": "2025-10-20T22:35:05.163347"
     },
     {
       "test": "Setup: VIEWER Accepted Invite",
       "success": true,
-      "details": "Invite accepted by viewer_1760999643@example.com",
-      "timestamp": "2025-10-20T22:34:08.265577"
+      "details": "Invite accepted by viewer_1760999701@example.com",
+      "timestamp": "2025-10-20T22:35:06.234181"
     },
     {
       "test": "RBAC: VIEWER Cannot Start Job",
       "success": true,
       "details": "VIEWER correctly denied sync-jobs/start access",
-      "timestamp": "2025-10-20T22:34:08.344538"
+      "timestamp": "2025-10-20T22:35:06.271893"
     },
     {
       "test": "RBAC: ANALYST Can Start Job",
-      "success": false,
-      "details": "Failed: {'status_code': 500, 'text': 'Internal Server Error', 'actual_status': 500, 'expected_status': 202}",
-      "timestamp": "2025-10-20T22:34:08.401666"
+      "success": true,
+      "details": "ANALYST successfully started job: JOB_f252a792-112b-49be-af5f-b629b8e6884b",
+      "timestamp": "2025-10-20T22:35:06.307323"
+    },
+    {
+      "test": "RBAC: VIEWER Can Get Job",
+      "success": true,
+      "details": "VIEWER can access job details: JOB_f252a792-112b-49be-af5f-b629b8e6884b",
+      "timestamp": "2025-10-20T22:35:06.342680"
     },
     {
       "test": "RBAC: VIEWER Can Get Latest",
       "success": true,
       "details": "VIEWER can access latest job",
-      "timestamp": "2025-10-20T22:34:08.438988"
+      "timestamp": "2025-10-20T22:35:06.378615"
     },
     {
       "test": "Rate Limit: Mutations Allowed",
       "success": false,
-      "details": "Too few mutations succeeded: 0/3",
-      "timestamp": "2025-10-20T22:34:08.853458"
+      "details": "Too few mutations succeeded: 1/3",
+      "timestamp": "2025-10-20T22:35:06.796668"
     },
     {
       "test": "Rate Limit: Reads Allowed",
       "success": true,
       "details": "Read rate limit working: 5/5 succeeded",
-      "timestamp": "2025-10-20T22:34:09.561054"
+      "timestamp": "2025-10-20T22:35:07.506220"
     },
     {
       "test": "Idempotency: First Job Start",
       "success": false,
       "details": "Failed: {'status_code': 500, 'text': 'Internal Server Error', 'actual_status': 500, 'expected_status': 202}",
-      "timestamp": "2025-10-20T22:34:09.598951"
+      "timestamp": "2025-10-20T22:35:07.539707"
     },
     {
-      "test": "Phase Progression: Prerequisites",
+      "test": "Phase Progression: Phases Correct",
       "success": false,
-      "details": "No job_id provided",
-      "timestamp": "2025-10-20T22:34:09.598989"
+      "details": "Expected phases: ['queued', 'discover', 'ingest', 'metrics', 'alerts', 'done'], observed: ['ingest', 'metrics', 'done']",
+      "timestamp": "2025-10-20T22:35:11.726178"
+    },
+    {
+      "test": "Phase Progression: Progress Increases",
+      "success": true,
+      "details": "Progress increased to 1.0",
+      "timestamp": "2025-10-20T22:35:11.726197"
+    },
+    {
+      "test": "Phase Progression: ETA Decreases",
+      "success": true,
+      "details": "ETA values: [140, 110, 80, 20]",
+      "timestamp": "2025-10-20T22:35:11.726206"
     },
     {
       "test": "Latest Helper: Without Type Filter",
       "success": true,
-      "details": "Latest job found: JOB_3c5b2615-2ca7-4485-9331-04cb9c4e896d",
-      "timestamp": "2025-10-20T22:34:09.636160"
+      "details": "Latest job found: JOB_3018a54c-e3cd-4ec5-86b1-1421733b6ad2",
+      "timestamp": "2025-10-20T22:35:11.766896"
     },
     {
       "test": "Latest Helper: With Type Filter",
       "success": true,
-      "details": "Latest all_refresh job found: JOB_e2404d7a-61e1-491a-9879-44dde5993e5b",
-      "timestamp": "2025-10-20T22:34:09.674559"
+      "details": "Latest all_refresh job found: JOB_f252a792-112b-49be-af5f-b629b8e6884b",
+      "timestamp": "2025-10-20T22:35:11.801872"
     },
     {
       "test": "Errors Array: No Errors Found",
       "success": true,
       "details": "No errors in job (good)",
-      "timestamp": "2025-10-20T22:34:09.716802"
+      "timestamp": "2025-10-20T22:35:11.846822"
     },
     {
       "test": "Multi-tenant Safety: Cross-org Access Denied",
       "success": true,
       "details": "Correctly returned 404 for cross-org job access",
-      "timestamp": "2025-10-20T22:34:09.792622"
+      "timestamp": "2025-10-20T22:35:11.918192"
     },
     {
       "test": "Telemetry: Job Started",
-      "success": false,
-      "details": "Failed to start job: {'status_code': 500, 'text': 'Internal Server Error', 'actual_status': 500, 'expected_status': 202}",
-      "timestamp": "2025-10-20T22:34:09.831663"
+      "success": true,
+      "details": "Job started (refresh_start telemetry should be logged): JOB_5fe55eaf-8664-4f9f-b5a8-349a2240a15f",
+      "timestamp": "2025-10-20T22:35:11.954126"
+    },
+    {
+      "test": "Telemetry: Job Completed",
+      "success": true,
+      "details": "Job completed (refresh_done telemetry should be logged)",
+      "timestamp": "2025-10-20T22:35:17.015079"
     }
   ],
   "test_data": {
     "users": {
-      "viewer_1760999643@example.com": {
-        "email": "viewer_1760999643@example.com",
+      "viewer_1760999701@example.com": {
+        "email": "viewer_1760999701@example.com",
         "password": "ViewerPass123!",
         "role": "VIEWER",
         "verified": true
       },
-      "analyst_1760999645@example.com": {
-        "email": "analyst_1760999645@example.com",
+      "analyst_1760999703@example.com": {
+        "email": "analyst_1760999703@example.com",
         "password": "AnalystPass123!",
         "role": "ANALYST",
         "verified": true
       }
     },
     "orgs": {
-      "TestOrg1_1760999647": {
-        "org_id": "65cb19b6-58f7-453f-b0e0-b01426231539",
-        "name": "TestOrg1_1760999647",
-        "owner": "analyst_1760999645@example.com"
+      "TestOrg1_1760999705": {
+        "org_id": "03b73479-f949-4ee5-82f8-89de2d243f2d",
+        "name": "TestOrg1_1760999705",
+        "owner": "analyst_1760999703@example.com"
       },
-      "TestOrg2_1760999647": {
-        "org_id": "236723cd-9177-4e12-a729-429b109d8624",
-        "name": "TestOrg2_1760999647",
-        "owner": "viewer_1760999643@example.com"
+      "TestOrg2_1760999705": {
+        "org_id": "9ca744d8-d147-4002-ae0d-9488a3f6b33e",
+        "name": "TestOrg2_1760999705",
+        "owner": "viewer_1760999701@example.com"
       }
     }
   }
