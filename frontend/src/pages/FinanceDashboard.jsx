@@ -3,14 +3,15 @@ import api from "@/api/client";
 import { useOrg } from "@/context/OrgContext";
 import DataHealthPill from "@/components/DataHealthPill";
 import ChecklistPanel from "@/components/ChecklistPanel";
+import JobBar from "@/components/JobBar";
 
 export default function FinanceDashboard() {
-  const { currentOrgId } = useOrg();
+  const { currentOrgId, role } = useOrg();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [jobMsg, setJobMsg] = useState("");
-  const [eta, setEta] = useState(null);
+
+  const canRun = role === "OWNER" || role === "ADMIN" || role === "ANALYST";
 
   const load = async () => {
     setLoading(true); setError("");
@@ -25,33 +26,6 @@ export default function FinanceDashboard() {
     try { const { data } = await api.post("/connections/xero/oauth/start", { org_id: currentOrgId }); window.location.href = data.auth_url; }
     catch(e){ alert(e?.response?.data?.detail || "Failed to start OAuth"); }
   };
-  const retry = async ()=>{
-    setJobMsg(""); setEta(null);
-    try {
-      const { data } = await api.post("/ingest/finance/refresh", { org_id: currentOrgId, sources: ["xero"] });
-      setJobMsg(`Sync job ${data.job_id} queued`);
-      // quick ETA poller
-      const t0 = Date.now(); let done = false;
-      const tick = async ()=>{
-        if (done) return;
-        try {
-          const resp = await api.get(`/sync-jobs/${data.job_id}`);
-          const j = resp.data; if (j.status==='done'){ done=true; setEta('done'); load(); return; }
-          if (j.status==='error'){ done=true; setEta('error'); return; }
-          const elapsed = Math.floor((Date.now()-t0)/1000);
-          // naive ETA based on phase progression
-          const phaseOrder = ['start','fetch_ar','fetch_ap','fetch_contacts'];
-          const idx = Math.max(0, phaseOrder.indexOf(j.phase||'start'));
-          const pct = Math.max(0.1, (idx+1)/phaseOrder.length);
-          const total = Math.max(60, Math.round(elapsed/pct));
-          const remain = Math.max(0, total - elapsed);
-          setEta(`${Math.floor(remain/60)}m ${remain%60}s remaining`);
-          setTimeout(tick, 1500);
-        } catch { setTimeout(tick, 2000); }
-      };
-      setTimeout(tick, 1200);
-    } catch(e){ alert(e?.response?.data?.detail || "Failed to start sync"); }
-  };
 
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-600">{String(error)}</div>;
@@ -60,9 +34,10 @@ export default function FinanceDashboard() {
     <div className="max-w-5xl mx-auto p-6 space-y-4" data-testid="finance-dashboard">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Finance</h1>
-        <DataHealthPill connection={data?.connection} onReconnect={reconnect} onRetry={retry} />
+        <DataHealthPill connection={data?.connection} onReconnect={reconnect} onRetry={load} />
       </div>
-      {jobMsg && <div className="text-xs text-gray-600">{jobMsg} {eta && <span>• ETA {eta}</span>} <span className="ml-2 text-[11px] text-gray-500">Phases: AR → AP → Contacts</span></div>}
+
+      <JobBar canRun={canRun} />
 
       <div className="grid grid-cols-2 gap-3">
         <div className="border rounded bg-white p-3">
