@@ -856,6 +856,10 @@ async def _now_iso():
 async def _job_public(job: Dict[str, Any]) -> Dict[str, Any]:
     j = dict(job)
     j.pop("_id", None)
+    # Convert datetime objects to ISO strings for JSON serialization
+    for key, value in j.items():
+        if isinstance(value, datetime):
+            j[key] = value.isoformat()
     return j
 
 async def _append_error(org_id: str, job_id: str, phase: str, code: str, message: str, details: Dict[str, Any] | None = None):
