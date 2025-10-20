@@ -38,6 +38,11 @@ DEV_EMAIL_STORE_TTL_HOURS = int(os.environ.get("DEV_EMAIL_STORE_TTL_HOURS", "24"
 PASSWORD_HASHER = os.environ.get("PASSWORD_HASHER", "bcrypt").lower()  # bcrypt supported
 
 # MongoDB connection
+
+@app.get("/api/health")
+def health():
+    return {"ok": True}
+
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
 
