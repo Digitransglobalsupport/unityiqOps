@@ -2354,6 +2354,9 @@ async def demo_seed(ctx: RequestContext = Depends(require_role("ADMIN"))):
     await db.orgs.update_one({"org_id": org_id}, {"$set": {"ui_prefs": {"show_snapshot_banner": True}, "org_flags": {"demo_seeded": True}}}, upsert=True)
     await audit_log_entry(org_id, ctx.user_id, "seed", "demo", {})
     return {"ok": True}
+    # Seed plan LITE to allow exports in demo
+    await db.plans.update_one({"org_id": org_id}, {"$set": {"org_id": org_id, "tier": "LITE", "limits": {"companies": 3, "connectors": 1, "exports": True, "alerts": True}, "updated_at": now}}, upsert=True)
+
 
     try:
         settings = await db.org_settings.find_one({"org_id": org_id}) or {}
