@@ -281,6 +281,16 @@ app.add_middleware(
     allow_credentials=True,
     allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
+
+# Health endpoints (must come after app init)
+@app.get("/api/health")
+def health():
+    return {"ok": True}
+
+@app.get("/health")
+def health_plain():
+    return {"ok": True}
+
     allow_headers=["*"],
 )
 
