@@ -882,7 +882,7 @@ async def sync_jobs_start(body: SyncStartBody, ctx: RequestContext = Depends(req
     existing = await db.sync_jobs.find_one({"org_id": body.org_id, "type": body.type, "phase": {"$nin": ["done", "error"]}}, {"_id": 0})
     if existing:
         await audit_log_entry(body.org_id, ctx.user_id, "sync_job_start", "sync_job", {"type": body.type, "job_id": existing.get("job_id"), "status": "existing"})
-        return JSONResponse(status_code=202, content={"status": "existing", "job": existing})
+        return JSONResponse(status_code=202, content={"status": "existing", "job": await _job_public(existing)})
     # Create new job
     job_id = "JOB_" + str(uuid.uuid4())
     now = datetime.now(timezone.utc)
