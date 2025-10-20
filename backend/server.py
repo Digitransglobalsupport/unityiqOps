@@ -333,6 +333,12 @@ def format_dd_mmm_yyyy(dstr: str | None) -> str:
             return "—"
         # Expect YYYY-MM-DD
         parts = [int(p) for p in dstr.split("-")]
+        if len(parts) != 3:
+            return "—"
+        y, m, d = parts
+        return f"{d:02d} {MONTHS3[m-1]} {y}"
+    except Exception:
+        return "—"
 # --- Action Plan (Checklist) assembler ---
 async def build_action_plan(org_id: str) -> Dict[str, Any]:
     # Fetch open and in-progress items for org
