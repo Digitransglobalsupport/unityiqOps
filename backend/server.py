@@ -1158,6 +1158,90 @@ async def finance_csv(org_id: str = Form(...), pl: UploadFile | None = File(None
     for r in pl_rows:
         period = r.get('period', '')
         if not is_period(period):
+
+# --- Synergy Checklist (Phase 2) ---
+class ChecklistItemCreate(BaseModel):
+    type: str  # "vendor_saving" | "cross_sell"
+    ref_id: str | None = None
+    title: str
+    owner_user_id: str | None = None
+    due_date: str | None = None  # ISO date
+
+class ChecklistItemUpdate(BaseModel):
+    owner_user_id: str | None = None
+    due_date: str | None = None
+    status: str | None = None  # open|done
+
+@api.get("/checklist")
+async def checklist_list(org_id: str, status: str | None = None, limit: int = 50, ctx: RequestContext = Depends(require_role("VIEWER"))):
+    if ctx.org_id != org_id:
+        raise HTTPException(status_code=400, detail="Org mismatch")
+    q = {"org_id": org_id}
+    if status:
+        q["status"] = status
+    items = await db.checklist_items.find(q, {"_id": 0}).sort("updated_at", -1).to_list(limit)
+    return items
+
+@api.post("/checklist")
+async def checklist_create(payload: Dict[str, Any], ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = ctx.org_id
+    now = datetime.now(timezone.utc)
+    items = payload if isinstance(payload, list) else [payload]
+    docs = []
+    for it in items:
+        data = ChecklistItemCreate(**it)
+        docs.append({
+            "id": str(uuid.uuid4()),
+            "org_id": org_id,
+            "type": data.type,
+            "ref_id": data.ref_id,
+            "title": data.title,
+            "owner_user_id": data.owner_user_id,
+            "due_date": data.due_date,
+            "status": "open",
+            "created_at": now,
+            "updated_at": now,
+        })
+    if docs:
+        await db.checklist_items.insert_many(docs)
+    await audit_log_entry(org_id, ctx.user_id, "checklist_create", "checklist", {"count": len(docs)})
+    return {"ok": True, "count": len(docs)}
+
+@api.patch("/checklist/{item_id}")
+async def checklist_update(item_id: str, payload: ChecklistItemUpdate, ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = ctx.org_id
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    updates["updated_at"] = datetime.now(timezone.utc)
+    res = await db.checklist_items.update_one({"org_id": org_id, "id": item_id}, {"$set": updates})
+    if not res.matched_count:
+        raise HTTPException(status_code=404, detail="Not found")
+    await audit_log_entry(org_id, ctx.user_id, "checklist_update", "checklist", {"id": item_id, **updates})
+    return {"ok": True}
+
+@api.post("/checklist/suggest")
+async def checklist_suggest(ctx: RequestContext = Depends(require_role("ANALYST"))):
+    org_id = ctx.org_id
+    # Top 5 vendor savings by est_saving
+    sav_doc = await db.savings_opps.find_one({"org_id": org_id}, {"_id": 0}) or {"items": []}
+    savings = sorted(sav_doc.get("items", []), key=lambda x: x.get("est_saving", 0), reverse=True)[:5]
+    # Top 5 cross-sell by expected_value
+    cs_doc = await db.cross_sell_opps.find_one({"org_id": org_id}, {"_id": 0}) or {"items": []}
+    cross = sorted(cs_doc.get("items", []), key=lambda x: x.get("expected_value", 0), reverse=True)[:5]
+    suggestions = []
+    for s in savings:
+        suggestions.append({
+            "type": "vendor_saving",
+            "ref_id": s.get("opportunity_id"),
+            "title": f"{s.get('type')} • {','.join(s.get('vendors', [])[:2])} • est £{s.get('est_saving',0)}",
+        })
+    for c in cross:
+        suggestions.append({
+            "type": "cross_sell",
+            "ref_id": c.get("opportunity_id") or c.get("master_id"),
+            "title": f"Cross-sell • {c.get('name') or c.get('master_id')} • EV £{c.get('expected_value',0)}",
+        })
+    return {"suggestions": suggestions}
+
             warnings.append(f"PL invalid period '{period}' - row skipped")
             continue
         try:
