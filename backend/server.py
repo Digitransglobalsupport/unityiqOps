@@ -1094,6 +1094,7 @@ async def run_xero_backfill(org_id: str, tenant_id: str, date_from: str, date_to
                 await db.finance_lines.insert_many(docs)
                 counts["ar"] += len(docs)
 
+                page += 1
 @api.get("/sync-jobs")
 async def list_sync_jobs(org_id: str, ctx: RequestContext = Depends(require_role("ANALYST"))):
     if ctx.org_id != org_id:
