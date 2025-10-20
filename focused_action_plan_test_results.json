@@ -1,0 +1,114 @@
+{
+  "summary": {
+    "total_tests": 16,
+    "passed_tests": 15,
+    "success_rate": 93.75
+  },
+  "detailed_results": [
+    {
+      "test": "User Signup",
+      "success": true,
+      "details": "User focused_test_1760997985@example.com created",
+      "timestamp": "2025-10-20T22:06:26.212117"
+    },
+    {
+      "test": "Email Verification",
+      "success": true,
+      "details": "Email verified",
+      "timestamp": "2025-10-20T22:06:27.289527"
+    },
+    {
+      "test": "User Login",
+      "success": true,
+      "details": "Login successful",
+      "timestamp": "2025-10-20T22:06:27.552316"
+    },
+    {
+      "test": "Create Organization",
+      "success": true,
+      "details": "Org created: 639595a0-758a-4af7-9a97-f7ed4420797f",
+      "timestamp": "2025-10-20T22:06:27.594017"
+    },
+    {
+      "test": "Demo Data Seed",
+      "success": true,
+      "details": "Demo data seeded with LITE plan",
+      "timestamp": "2025-10-20T22:06:27.642122"
+    },
+    {
+      "test": "Create Owner Users",
+      "success": true,
+      "details": "Created 3 owner users",
+      "timestamp": "2025-10-20T22:06:32.594456"
+    },
+    {
+      "test": "Create Checklist Items",
+      "success": false,
+      "details": "Failed: {'detail': [{'type': 'dict_type', 'loc': ['body'], 'msg': 'Input should be a valid dictionary', 'input': [{'type': 'vendor', 'title': 'Negotiate better rates with primary vendor', 'owner_user_id': '9b15d4a7-f004-44b2-a554-02c63c863584', 'due_date': '2025-02-15'}, {'type': 'cross_sell', 'title': 'Cross-sell premium service to top client', 'owner_user_id': 'ac58c2d4-3fb9-4678-b2da-ba48b83e06ff', 'due_date': '2025-01-30'}, {'type': 'ops', 'title': 'Optimize cloud infrastructure costs', 'owner_user_id': '9942482f-d45e-4774-a704-03892a8c460f', 'due_date': None}, {'type': 'vendor', 'title': 'Renegotiate software licensing', 'owner_user_id': '9b15d4a7-f004-44b2-a554-02c63c863584', 'due_date': '2025-03-01'}, {'type': 'cross_sell', 'title': 'Upsell analytics package', 'owner_user_id': 'ac58c2d4-3fb9-4678-b2da-ba48b83e06ff', 'due_date': '2025-02-28'}, {'type': 'ops', 'title': 'Streamline procurement process', 'owner_user_id': '9942482f-d45e-4774-a704-03892a8c460f', 'due_date': None}, {'type': 'vendor', 'title': 'Review office supply contracts', 'owner_user_id': '9b15d4a7-f004-44b2-a554-02c63c863584', 'due_date': '2025-04-15'}, {'type': 'cross_sell', 'title': 'Introduce add-on services', 'owner_user_id': 'ac58c2d4-3fb9-4678-b2da-ba48b83e06ff', 'due_date': '2025-03-15'}, {'type': 'ops', 'title': 'Automate manual reporting', 'owner_user_id': '9942482f-d45e-4774-a704-03892a8c460f', 'due_date': '2025-02-10'}, {'type': 'vendor', 'title': 'Evaluate new vendor options', 'owner_user_id': None, 'due_date': '2025-01-25'}, {'type': 'cross_sell', 'title': 'Market research for new products', 'owner_user_id': None, 'due_date': None}, {'type': 'ops', 'title': 'Process improvement initiative', 'owner_user_id': None, 'due_date': '2025-05-01'}, {'type': 'vendor', 'title': 'Vendor contract renewal', 'owner_user_id': 'ac58c2d4-3fb9-4678-b2da-ba48b83e06ff', 'due_date': '2025-01-20'}, {'type': 'cross_sell', 'title': 'Customer retention program', 'owner_user_id': '9b15d4a7-f004-44b2-a554-02c63c863584', 'due_date': '2025-02-05'}, {'type': 'ops', 'title': 'Workflow optimization', 'owner_user_id': '9942482f-d45e-4774-a704-03892a8c460f', 'due_date': '2025-03-30'}], 'url': 'https://errors.pydantic.dev/2.12/v/dict_type'}], 'actual_status': 422, 'expected_status': 200}",
+      "timestamp": "2025-10-20T22:06:32.631039"
+    },
+    {
+      "test": "Export PDF Generation",
+      "success": true,
+      "details": "PDF generated successfully",
+      "timestamp": "2025-10-20T22:06:32.711210"
+    },
+    {
+      "test": "Export Entitlement Gate",
+      "success": true,
+      "details": "Export allowed on LITE plan (200 response)",
+      "timestamp": "2025-10-20T22:06:32.711238"
+    },
+    {
+      "test": "Export PDF Size",
+      "success": true,
+      "details": "PDF size: 3,294 bytes (\u22641.5MB)",
+      "timestamp": "2025-10-20T22:06:32.711247"
+    },
+    {
+      "test": "Export Performance",
+      "success": true,
+      "details": "Render time: 80.1ms (<200ms)",
+      "timestamp": "2025-10-20T22:06:32.711254"
+    },
+    {
+      "test": "Export PDF Sample",
+      "success": true,
+      "details": "Sample PDF saved to /app/sample_action_plan_focused.pdf",
+      "timestamp": "2025-10-20T22:06:32.711358"
+    },
+    {
+      "test": "Action Plan Business Logic",
+      "success": true,
+      "details": "Business logic validation complete",
+      "timestamp": "2025-10-20T22:06:32.711368"
+    },
+    {
+      "test": "Checklist Items Count",
+      "success": true,
+      "details": "Found 0 checklist items",
+      "timestamp": "2025-10-20T22:06:32.749437"
+    },
+    {
+      "test": "Empty State Export",
+      "success": true,
+      "details": "Export works with no checklist items (empty state)",
+      "timestamp": "2025-10-20T22:06:33.059910"
+    },
+    {
+      "test": "Telemetry Logging",
+      "success": true,
+      "details": "Telemetry check noted (track('snapshot_generated') should appear in backend logs)",
+      "timestamp": "2025-10-20T22:06:33.060066"
+    }
+  ],
+  "test_data": {
+    "user_email": "focused_test_1760997985@example.com",
+    "org_id": "639595a0-758a-4af7-9a97-f7ed4420797f",
+    "owner_user_ids": [
+      "9b15d4a7-f004-44b2-a554-02c63c863584",
+      "ac58c2d4-3fb9-4678-b2da-ba48b83e06ff",
+      "9942482f-d45e-4774-a704-03892a8c460f"
+    ]
+  }
+}
