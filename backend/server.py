@@ -682,21 +682,6 @@ async def xero_select_tenant(payload: Dict[str, Any], ctx: RequestContext = Depe
     await db.connections.update_one({"org_id": org_id, "vendor": "xero"}, {"$set": {"default_tenant_id": tenant_id, "updated_at": datetime.now(timezone.utc)}})
     return {"ok": True}
 
-        return HTMLResponse("Invalid or expired state", status_code=400)
-    html = f"""
-    <html><body style='font-family: sans-serif;'>
-    <h3>Mock Xero Consent</h3>
-    <p>State: {state}</p>
-    <form method='post' action='/api/connections/xero/oauth/callback' style='margin-top:16px;'>
-      <input type='hidden' name='code' value='MOCK_CODE'/>
-      <input type='hidden' name='state' value='{state}'/>
-      <input type='hidden' name='org_id' value='{st.get('org_id')}'/>
-      <button type='submit'>Approve</button>
-    </form>
-    </body></html>
-    """
-    return HTMLResponse(content=html)
-
 @api.post("/connections/xero/oauth/callback")
 async def xero_callback(body: Dict[str, Any]):
     # Store mock tokens encrypted under org_id resolved via state
