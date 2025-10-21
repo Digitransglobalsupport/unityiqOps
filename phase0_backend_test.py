@@ -446,7 +446,7 @@ class Phase0BackendTester:
         self.log_test("7a. Finance Dashboard", True, f"Dashboard data returned, last_sync_at: {last_sync_at}")
         
         # Step 2: GET /api/dashboard/finance/trends => contains series
-        success, response = self.make_request("GET", "/dashboard/finance/trends", headers=headers)
+        success, response = self.make_request("GET", f"/dashboard/finance/trends?org_id={self.org_id}", headers=headers)
         
         if not success:
             self.log_test("7b. Finance Trends", False, f"Finance trends failed: {response}")
