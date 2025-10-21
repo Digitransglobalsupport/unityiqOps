@@ -2423,6 +2423,35 @@ async def billing_entitlements(ctx: RequestContext = Depends(require_role("VIEWE
     }
     return {"plan": plan, "limits": limits_out, "usage": usage}
 
+@api.post("/billing/start-lite-trial")
+async def start_lite_trial(ctx: RequestContext = Depends(require_role("ADMIN"))):
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    now = datetime.now(timezone.utc)
+    # Check if already on LITE or better
+    current_limits = await get_plan_limits(ctx.org_id)
+    current_tier = current_limits.get("tier", "FREE")
+    if current_tier in ["LITE", "PRO"]:
+        return {"ok": True, "message": f"Already on {current_tier} plan"}
+    # Upgrade to LITE
+    await db.plans.update_one(
+        {"org_id": ctx.org_id},
+        {"$set": {
+            "org_id": ctx.org_id,
+            "tier": "LITE",
+            "limits": {
+                "companies": 3,
+                "connectors": 1,
+                "exports": True,
+                "alerts": True
+            },
+            "updated_at": now
+        }},
+        upsert=True
+    )
+    await audit_log_entry(ctx.org_id, ctx.user_id, "upgrade", "plan_lite_trial", {"from": current_tier, "to": "LITE"})
+    return {"ok": True, "message": "Upgraded to LITE plan", "tier": "LITE"}
+
 # NOTE: The block below was incorrectly appended due to a prior edit; cleaning up to fix indentation/syntax.
 
 # --- Demo Seed ---
