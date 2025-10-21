@@ -8,7 +8,7 @@ import json
 import time
 
 def test_idempotency():
-    base_url = "https://finance-crm-hub.preview.emergentagent.com"
+    base_url = "https://finance-hub-225.preview.emergentagent.com"
     
     # Setup user and org (reuse from previous test results)
     # First, let's create a new user for this test

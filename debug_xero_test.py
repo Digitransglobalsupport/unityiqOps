@@ -7,7 +7,7 @@ import requests
 import json
 import time
 
-BASE_URL = "https://finance-crm-hub.preview.emergentagent.com"
+BASE_URL = "https://finance-hub-225.preview.emergentagent.com"
 
 def make_request(method, endpoint, data=None, headers=None):
     url = f"{BASE_URL}/api/{endpoint.lstrip('/')}"

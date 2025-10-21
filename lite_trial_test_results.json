@@ -68,7 +68,7 @@
     {
       "test": "Xero Connection Available",
       "success": true,
-      "details": "Xero OAuth start successful: https://finance-crm-hub.preview.emergentagent.com/...",
+      "details": "Xero OAuth start successful: https://finance-hub-225.preview.emergentagent.com/...",
       "timestamp": "2025-10-21T12:42:19.417523"
     }
   ]
