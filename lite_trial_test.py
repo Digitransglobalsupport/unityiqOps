@@ -484,11 +484,15 @@ class LiteTrialTester:
 
     def test_database_plan_update(self):
         """Test that the plan is correctly updated in the database by checking audit logs"""
-        headers = self.get_auth_headers()
+        if not hasattr(self, 'upgraded_org_id'):
+            self.log_test("Database Plan Update", False, "No upgraded org available")
+            return False
+        
+        headers = {"Authorization": f"Bearer {self.access_token}", "X-Org-Id": self.upgraded_org_id}
         
         success, response = self.make_request(
             "GET", 
-            f"/audit/logs?org_id={self.test_org['org_id']}", 
+            f"/audit/logs?org_id={self.upgraded_org_id}", 
             headers=headers
         )
         
