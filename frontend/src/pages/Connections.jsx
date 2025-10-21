@@ -112,6 +112,45 @@ export default function Connections() {
       {error && <div className="text-red-600 text-sm mb-2">{String(error)}</div>}
       {message && <div className="text-green-700 text-sm mb-2">{String(message)}</div>}
 
+      {/* Plan info banner */}
+      {entitlements && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+          <div className="text-sm font-medium">Current Plan: {entitlements.plan?.tier || 'FREE'}</div>
+          <div className="text-xs text-gray-600 mt-1">
+            Connectors: {entitlements.usage?.connectors || 0} / {entitlements.limits?.connectors || 0} • 
+            Exports: {entitlements.limits?.exports ? 'Enabled' : 'Disabled'}
+          </div>
+        </div>
+      )}
+
+      {/* Lite Trial Upgrade Card - Show only for FREE plan users */}
+      {entitlements && entitlements.plan?.tier === 'FREE' && entitlements.limits?.connectors === 0 && canAdmin && (
+        <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded" data-testid="lite-trial-card">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="font-semibold text-lg">Start Lite Trial</div>
+              <div className="text-sm text-gray-700 mt-1">
+                Upgrade to LITE plan to unlock:
+              </div>
+              <ul className="text-xs text-gray-600 mt-2 space-y-1 ml-4 list-disc">
+                <li>1 Xero connector for live data sync</li>
+                <li>Manage up to 3 companies</li>
+                <li>PDF exports and Snapshot reports</li>
+                <li>Email and Slack alerts</li>
+              </ul>
+            </div>
+            <button 
+              onClick={startLiteTrial}
+              disabled={upgrading}
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+              data-testid="start-lite-trial-btn"
+            >
+              {upgrading ? 'Upgrading...' : 'Start Lite Trial'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="border rounded bg-white p-4">
         <div className="flex items-center justify-between">
           <div>
