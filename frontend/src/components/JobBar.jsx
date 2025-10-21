@@ -62,6 +62,21 @@ export default function JobBar({ canRun }) {
     }
   };
 
+  // Visibility handling
+  useEffect(() => {
+    const onVis = () => {
+      if (!job) return;
+      if (document.hidden) {
+        stopPoll();
+      } else {
+        // immediate fetch and resume cadence if active
+        pollJob(job.job_id);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [job]);
+
   useEffect(()=>{ fetchLatest(); return ()=>stopPoll(); }, [currentOrgId]);
 
   const label = job ? (PHASE_LABEL[job.phase] || job.phase) : null;
