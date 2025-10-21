@@ -9,6 +9,7 @@ import JobBar from "@/components/JobBar";
 
 export default function FinanceDashboard() {
   const { currentOrgId, role } = useOrg();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
