@@ -1,19 +1,33 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import api from "@/api/client";
 import { useOrg } from "@/context/OrgContext";
+import LiteTrialCard from "@/components/LiteTrialCard";
+import LiteTrialSkeleton from "@/components/LiteTrialSkeleton";
 
 export default function Connections() {
   const { currentOrgId, role } = useOrg();
   const [status, setStatus] = useState(null);
   const [entitlements, setEntitlements] = useState(null);
+  const [entitlementsLoading, setEntitlementsLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [job, setJob] = useState(null);
   const [polling, setPolling] = useState(false);
-  const [upgrading, setUpgrading] = useState(false);
   const canAdmin = ["OWNER","ADMIN"].includes(role||"");
 
-  console.log('Connections component render - currentOrgId:', currentOrgId, 'role:', role, 'canAdmin:', canAdmin);
+  const loadEntitlements = useCallback(async () => {
+    try {
+      const { data } = await api.get('/billing/entitlements');
+      console.log('Entitlements loaded:', data);
+      setEntitlements(data);
+      setEntitlementsLoading(false);
+      return data;
+    } catch(e) {
+      console.error('Failed to load entitlements', e);
+      setEntitlementsLoading(false);
+      return null;
+    }
+  }, []);
 
   const load = async () => {
     setError(""); setMessage("");
@@ -25,26 +39,22 @@ export default function Connections() {
     }
   };
 
-  const loadEntitlements = async () => {
-    try {
-      const { data } = await api.get('/billing/entitlements');
-      console.log('Entitlements loaded:', data);
-      console.log('Tier:', data?.plan?.tier);
-      console.log('Connectors limit:', data?.limits?.connectors);
-      console.log('canAdmin:', canAdmin);
-      setEntitlements(data);
-    } catch(e) {
-      console.error('Failed to load entitlements', e);
-    }
-  };
-
   useEffect(()=>{ 
     if(currentOrgId) {
       console.log('Loading data for org:', currentOrgId, 'Role:', role);
       load(); 
       loadEntitlements();
+      
+      // Track card view if eligible
+      const checkEligibility = async () => {
+        const ents = await loadEntitlements();
+        if (ents && canAdmin && ents.plan?.tier === 'FREE' && ents.limits?.connectors === 0) {
+          console.log('trial_card_viewed');
+        }
+      };
+      checkEligibility();
     }
-  }, [currentOrgId, role]);
+  }, [currentOrgId, role, canAdmin, loadEntitlements]);
 
   const connectXero = async () => {
     try {
