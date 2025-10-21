@@ -41,16 +41,21 @@ export default function NavBar() {
           </div>
         ) : (
           <>
-            <select
-              data-testid="org-switcher"
-              className="bg-gray-800 text-white text-sm px-2 py-1 rounded"
-              value={currentOrgId || ""}
-              onChange={(e) => setCurrentOrgId(e.target.value)}
-            >
-              {memberships.map((m) => (
-                <option key={m.org_id} value={m.org_id}>{m.org_id} • {m.role}</option>
-              ))}
-            </select>
+            {/* When verified and orgless, show Create organisation CTA instead of switcher */}
+            {(user?.email_verified && !currentOrgId) ? (
+              <Link to="/onboarding" data-testid="create-org-nav" className="text-sm bg-white text-gray-900 px-2 py-1 rounded">Create organisation</Link>
+            ) : (
+              <select
+                data-testid="org-switcher"
+                className="bg-gray-800 text-white text-sm px-2 py-1 rounded"
+                value={currentOrgId || ""}
+                onChange={(e) => setCurrentOrgId(e.target.value)}
+              >
+                {memberships.map((m) => (
+                  <option key={m.org_id} value={m.org_id}>{m.org_id} • {m.role}</option>
+                ))}
+              </select>
+            )}
             <span data-testid="user-email" className="text-sm text-gray-300">{user?.email}</span>
             <span data-testid="user-role" className="text-xs bg-gray-800 px-2 py-1 rounded">{role || "-"}</span>
             <button data-testid="logout-button" onClick={logout} className="text-sm text-red-300 hover:text-red-400">Logout</button>
