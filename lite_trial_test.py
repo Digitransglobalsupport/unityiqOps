@@ -176,21 +176,21 @@ class LiteTrialTester:
             self.log_test("Auth Required: No Token", False, f"Expected 401, got: {response}")
 
     def test_org_header_required(self):
-        """Test that X-Org-Id header is required"""
+        """Test that X-Org-Id header behavior (falls back to first membership for single-org users)"""
         headers = {"Authorization": f"Bearer {self.access_token}"}
-        # Don't include X-Org-Id header
+        # Don't include X-Org-Id header - should work for single-org users
         
         success, response = self.make_request(
             "POST", 
             "/billing/start-lite-trial", 
             headers=headers,
-            expected_status=400
+            expected_status=200
         )
         
-        if success and "No org selected" in str(response.get("detail", "")):
-            self.log_test("Auth Required: X-Org-Id Header", True, "Correctly required X-Org-Id header")
+        if success and response.get("ok") == True:
+            self.log_test("Auth Behavior: Single Org Fallback", True, "Correctly fell back to first membership for single-org user")
         else:
-            self.log_test("Auth Required: X-Org-Id Header", False, f"Expected 400 'No org selected', got: {response}")
+            self.log_test("Auth Behavior: Single Org Fallback", False, f"Expected successful fallback, got: {response}")
 
     def test_admin_role_required(self):
         """Test that ADMIN role is required"""
