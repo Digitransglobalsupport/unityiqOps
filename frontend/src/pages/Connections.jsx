@@ -137,6 +137,13 @@ export default function Connections() {
           ⚠️ Entitlements not loaded yet for org: {currentOrgId}
         </div>
       )}
+      
+      {/* Debug: Show why card might not be showing */}
+      {currentOrgId && entitlements && !canAdmin && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+          ⚠️ You need ADMIN or OWNER role to manage connections. Current role: {role || 'none'}
+        </div>
+      )}
 
       {/* Lite Trial Upgrade Card - Show only for FREE plan users */}
       {entitlements && entitlements.plan?.tier === 'FREE' && entitlements.limits?.connectors === 0 && canAdmin && (
