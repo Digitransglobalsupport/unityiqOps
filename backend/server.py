@@ -1850,6 +1850,7 @@ async def customers_master(org_id: str, q: Optional[str] = None, min_conf: float
         raise HTTPException(status_code=400, detail="Org mismatch")
     doc = await db.customer_master.find_one({"org_id": org_id}) or {}
     items = doc.get("items", [])
+    last_sync_at = doc.get("updated_at")
     # filter
     def matches(m):
         if m.get("confidence", 0) < min_conf:
