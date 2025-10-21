@@ -35,8 +35,8 @@ function App() {
           <Route path="/accept-invite" element={<AcceptInvite />} />
 
           <Route path="/dashboard/finance" element={<ProtectedRoute requireVerified={true} allowOrgless={true}><FinanceDashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/customers" element={<ProtectedRoute requireVerified={true}><CustomersDashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/vendors" element={<ProtectedRoute requireVerified={true}><VendorsDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/customers" element={<ProtectedRoute requireVerified={true} allowOrgless={true}><CustomersDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/vendors" element={<ProtectedRoute requireVerified={true} allowOrgless={true}><VendorsDashboard /></ProtectedRoute>} />
 
           <Route path="/onboarding" element={<ProtectedRoute requireVerified={true}><OnboardingWizard /></ProtectedRoute>} />
           <Route path="/members" element={<ProtectedRoute minRole="ADMIN" requireVerified={true}><Members /></ProtectedRoute>} />
