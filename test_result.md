@@ -147,8 +147,8 @@
 
 ## metadata:
   created_by: "main_agent"
-  version: "1.7"
-  test_sequence: 8
+  version: "1.8"
+  test_sequence: 9
   run_ui: true
 
 ## test_plan:
