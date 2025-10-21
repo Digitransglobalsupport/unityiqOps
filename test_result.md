@@ -117,17 +117,116 @@
         comment: "Code review confirms all orgless hardening features are correctly implemented: 1) NavBar shows create-org-nav for verified orgless users (NavBar.jsx:45-46), 2) Dashboard pages have orgless-prompt cards with Go to Onboarding CTA when !currentOrgId, 3) ProtectedRoute allows orgless access with allowOrgless=true, 4) API client properly omits X-Org-Id header when orgless (client.js:50-55), 5) OrgContext has auto-select logic for single membership (OrgContext.jsx:18-23), 6) OnboardingWizard creates orgs and updates localStorage. Automated testing was limited by authentication setup but code implementation is complete and follows requirements."
 
 ## backend:
-  - task: "Lite Trial Upgrade Endpoint - Polished"
+  - task: "Health Endpoint"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Phase 0 Test: GET /api/health returns {ok: true} as expected. Health check endpoint working correctly."
+
+  - task: "Authentication Flow"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Phase 0 Test: Complete auth flow tested - signup → verify email → login → /me endpoint. All steps working correctly with proper JWT token generation and email verification via dev store."
+
+  - task: "Organization Creation and RBAC"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Phase 0 Test: Organization creation and RBAC with X-Org-Id header working correctly. User can create org and access org-scoped endpoints with proper authorization."
+
+  - task: "Xero Mock OAuth Flow"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Phase 0 Test: Xero mock OAuth flow working. Fixed missing RedirectResponse import in callback endpoint. OAuth start returns auth_url and callback accepts form data returning 302/200. Server doesn't crash during OAuth flow."
+
+  - task: "Billing Entitlements and Lite Trial"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Phase 0 Test: Billing system working perfectly. GET /api/billing/entitlements returns correct FREE plan limits. POST /api/billing/start-lite-trial upgrades to LITE (connectors=1, exports=true) and returns 409 on repeat calls. Entitlements properly reflect LITE plan after upgrade."
+
+  - task: "Sync Job Monitor APIs"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Phase 0 Test: Sync job monitoring working correctly. POST /api/sync-jobs/start creates jobs, GET /api/sync-jobs/latest and GET /api/sync-jobs/{id} return proper job data. Progress is monotonic and errors array is properly structured (capped at 50)."
+
+  - task: "Finance Dashboard Data"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Phase 0 Test: Finance dashboard endpoints working. GET /api/dashboard/finance returns data with last_sync_at field. GET /api/dashboard/finance/trends returns 4 series (revenue, gm_pct, opex, dso_days) with proper data points."
+
+  - task: "Connections Status"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Phase 0 Test: GET /api/connections/status returns 200 with proper connection data structure including xero provider information."
+
+  - task: "Lite Trial Upgrade Endpoint - Polished"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Enhanced POST /api/billing/start-lite-trial endpoint: Now returns 409 ERR_PLAN_ALREADY_ACTIVATED instead of 200 for idempotency, sets org.ui_prefs.show_snapshot_banner=true, inserts billing_events record with type:trial_started/channel:direct/amount:0, sets entitlements.snapshot_enabled=true, returns full plan/limits/entitlements object. Added POST /api/billing/end-lite-trial (OWNER only) for preview/demo revert from LITE->FREE with billing_events and audit logging."
+      - working: true
+        agent: "testing"
+        comment: "Phase 0 Test: Lite trial upgrade endpoint fully tested and working. Proper 409 handling for repeat calls, correct plan upgrades, and entitlements updates confirmed."
 
 ## frontend:
   - task: "Lite Trial Card Component - Polished"
