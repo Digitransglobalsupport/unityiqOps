@@ -347,9 +347,29 @@ class LiteTrialTester:
             return False
 
     def test_lite_trial_upgrade(self):
-        """Test successful upgrade to LITE plan"""
-        headers = self.get_auth_headers()
+        """Test successful upgrade to LITE plan on a fresh org"""
+        # Create another fresh org for this test
+        fresh_org_name = f"UpgradeTestOrg_{int(time.time())}"
+        headers = {"Authorization": f"Bearer {self.access_token}"}
         
+        success, response = self.make_request("POST", "/orgs", {
+            "name": fresh_org_name
+        }, headers=headers)
+        
+        if not success or "org_id" not in response:
+            self.log_test("Lite Trial Upgrade: Fresh Org Creation", False, f"Failed to create fresh org: {response}")
+            return False
+        
+        fresh_org_id = response["org_id"]
+        headers["X-Org-Id"] = fresh_org_id
+        
+        # Verify it starts as FREE
+        success, entitlements = self.make_request("GET", "/billing/entitlements", headers=headers)
+        if success and entitlements.get("plan", {}).get("tier") != "FREE":
+            self.log_test("Lite Trial Upgrade: Pre-check", False, f"Fresh org not FREE: {entitlements}")
+            return False
+        
+        # Now test the upgrade
         success, response = self.make_request(
             "POST", 
             "/billing/start-lite-trial", 
@@ -367,6 +387,9 @@ class LiteTrialTester:
             
             if response_match:
                 self.log_test("Lite Trial Upgrade", True, f"Successfully upgraded to LITE: {response}")
+                
+                # Store this org for follow-up tests
+                self.upgraded_org_id = fresh_org_id
                 return True
             else:
                 self.log_test("Lite Trial Upgrade", False, f"Expected {expected_response}, got: {response}")
