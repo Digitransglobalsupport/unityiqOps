@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "@/api/client";
 import { useOrg } from "@/context/OrgContext";
+import { useNavigate } from "react-router-dom";
 
 export default function CustomersDashboard() {
   const { currentOrgId, role } = useOrg();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [minConf, setMinConf] = useState(0.7);
   const [cursor, setCursor] = useState(null);
@@ -20,6 +22,7 @@ export default function CustomersDashboard() {
   const loadMasters = async (c=null) => {
     setLoading(true); setMsg("");
     try {
+      if (!currentOrgId) return; // short-circuit when orgless
       const { data } = await api.get(`/customers/master?org_id=${currentOrgId}&q=${encodeURIComponent(q)}&min_conf=${minConf}&limit=50${c?`&cursor=${c}`:''}`);
       setMasters(data.items || []);
       setStats(data.stats || null);
@@ -29,10 +32,29 @@ export default function CustomersDashboard() {
   };
 
   const loadOpps = async () => {
-    try { const { data } = await api.get(`/opps/cross-sell?org_id=${currentOrgId}&status=${statusFilter}&limit=50`); setOpps(data.items || []);} catch(e){}
+    try {
+      if (!currentOrgId) return; // short-circuit when orgless
+      const { data } = await api.get(`/opps/cross-sell?org_id=${currentOrgId}&status=${statusFilter}&limit=50`); setOpps(data.items || []);
+    } catch(e){}
   };
 
   useEffect(()=>{ if(currentOrgId){ loadMasters(); loadOpps(); } }, [currentOrgId, statusFilter]);
+
+  if (!currentOrgId) {
+    return (
+      <div className="max-w-3xl mx-auto p-6" data-testid="orgless-prompt">
+        <h1 className="text-2xl font-semibold mb-2">Customers</h1>
+        <div className="border rounded bg-white p-6">
+          <div className="text-base font-medium mb-1">Let’s connect your first company</div>
+          <div className="text-sm text-gray-600 mb-4">Create or select an organisation to begin.</div>
+          <div className="flex items-center gap-3">
+            <button className="bg-black text-white px-4 py-2 rounded" onClick={()=> navigate('/onboarding')} data-testid="go-to-onboarding">Go to Onboarding</button>
+            <a href="/about" className="text-sm underline text-gray-700">Learn more</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const review = async (pair_id, decision, master_id) => {
     try {

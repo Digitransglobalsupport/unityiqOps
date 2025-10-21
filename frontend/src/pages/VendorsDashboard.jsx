@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "@/api/client";
 import { useOrg } from "@/context/OrgContext";
+import { useNavigate } from "react-router-dom";
 
 function Kpis({ summary, savings }){
   return (
@@ -14,6 +15,7 @@ function Kpis({ summary, savings }){
 
 export default function VendorsDashboard(){
   const { currentOrgId, role } = useOrg();
+  const navigate = useNavigate();
   const [vendors, setVendors] = useState([]);
   const [summary, setSummary] = useState(null);
   const [opps, setOpps] = useState([]);
@@ -29,10 +31,12 @@ export default function VendorsDashboard(){
   const canAdmin = ["ADMIN","OWNER"].includes(role||"");
 
   const loadVendors = async () => {
+    if (!currentOrgId) return; // short-circuit when orgless
     const { data } = await api.get(`/vendors/master?org_id=${currentOrgId}&q=${encodeURIComponent(q)}&category=${category}&shared=${shared}&limit=50`);
     setVendors(data.items||[]); setSummary(data.summary||null);
   };
   const loadOpps = async () => {
+    if (!currentOrgId) return; // short-circuit when orgless
     const { data } = await api.get(`/opps/savings?org_id=${currentOrgId}&status=${status}&limit=50`);
     setOpps(data.items||[]); setOppSummary(data.summary||null);
   };
@@ -40,6 +44,22 @@ export default function VendorsDashboard(){
     const { data } = await api.get('/vendors/categories'); setCats(data.categories||[]);
   };
   useEffect(()=>{ if (currentOrgId){ loadVendors(); loadOpps(); loadCats(); } }, [currentOrgId, status]);
+
+  if (!currentOrgId) {
+    return (
+      <div className="max-w-3xl mx-auto p-6" data-testid="orgless-prompt">
+        <h1 className="text-2xl font-semibold mb-2">Vendors</h1>
+        <div className="border rounded bg-white p-6">
+          <div className="text-base font-medium mb-1">Let’s connect your first company</div>
+          <div className="text-sm text-gray-600 mb-4">Create or select an organisation to begin.</div>
+          <div className="flex items-center gap-3">
+            <button className="bg-black text-white px-4 py-2 rounded" onClick={()=> navigate('/onboarding')} data-testid="go-to-onboarding">Go to Onboarding</button>
+            <a href="/about" className="text-sm underline text-gray-700">Learn more</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const moveStatus = async (opp_id, ns) => {
     try { await api.post(`/opps/savings/${opp_id}/status`, { status: ns }); setMsg('Status updated'); loadOpps(); } catch(e){ setMsg('Update failed'); }
