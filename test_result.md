@@ -119,15 +119,18 @@
 ## backend:
   - task: "Lite Trial Upgrade Endpoint"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Added POST /api/billing/start-lite-trial endpoint at line 2426. Endpoint requires ADMIN role, checks current plan tier, upgrades org from FREE to LITE (connectors: 1, companies: 3, exports: true, alerts: true), logs audit entry. Returns success message with new tier."
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive testing completed with 11/11 tests passing (100% success rate). Verified: 1) Authentication required (401 without token), 2) ADMIN role enforcement (403 for VIEWER), 3) Single-org fallback behavior works correctly, 4) Fresh orgs start with FREE plan, 5) Successful upgrade from FREE to LITE with correct response format, 6) Entitlements updated correctly after upgrade (connectors: 1, companies: 3, exports: true, alerts: true), 7) Audit log entry created with proper metadata, 8) Idempotency - subsequent calls return 'Already on LITE plan', 9) FREE plan blocks Xero connections (LIMIT_EXCEEDED), 10) LITE plan allows Xero connections (auth_url returned). Fixed bug in Xero OAuth start endpoint that was returning null - added proper return statements for both live and mock modes."
 
 ## frontend:
   - task: "Lite Trial UI on Connections Page"
