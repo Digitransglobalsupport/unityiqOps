@@ -42,13 +42,13 @@ export default function NavBar() {
         ) : (
           <>
             {/* When verified and orgless, show Create organisation CTA instead of switcher */}
-            {(user?.email_verified && !currentOrgId) ? (
+            {(user?.email_verified && !currentOrgId && memberships.length === 0) ? (
               <Link to="/onboarding" data-testid="create-org-nav" className="text-sm bg-white text-gray-900 px-2 py-1 rounded">Create organisation</Link>
             ) : (
               <select
                 data-testid="org-switcher"
                 className="bg-gray-800 text-white text-sm px-2 py-1 rounded"
-                value={currentOrgId || ""}
+                value={currentOrgId || (memberships[0]?.org_id || "")}
                 onChange={(e) => setCurrentOrgId(e.target.value)}
               >
                 {memberships.map((m) => (
