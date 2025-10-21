@@ -1,134 +1,140 @@
 {
   "summary": {
-    "total_tests": 20,
-    "passed_tests": 17,
-    "success_rate": 85.0
+    "total_tests": 21,
+    "passed_tests": 20,
+    "success_rate": 95.23809523809523
   },
   "detailed_results": [
     {
       "test": "1. Health Endpoint",
       "success": true,
       "details": "Health check returned {ok: true}",
-      "timestamp": "2025-10-21T21:44:36.041823"
+      "timestamp": "2025-10-21T21:45:22.152710"
     },
     {
       "test": "2a. Auth Signup",
       "success": true,
-      "details": "User test_user_1761083075_6676@example.com created successfully",
-      "timestamp": "2025-10-21T21:44:36.415359"
+      "details": "User test_user_1761083122_3571@example.com created successfully",
+      "timestamp": "2025-10-21T21:45:22.453383"
     },
     {
       "test": "2b. Auth Verify Email Sent",
       "success": true,
       "details": "Verification email found in dev store",
-      "timestamp": "2025-10-21T21:44:38.460521"
+      "timestamp": "2025-10-21T21:45:24.497817"
     },
     {
       "test": "2c. Auth Email Verification",
       "success": true,
       "details": "Email verified successfully",
-      "timestamp": "2025-10-21T21:44:38.504647"
+      "timestamp": "2025-10-21T21:45:24.542117"
     },
     {
       "test": "2d. Auth Login",
       "success": true,
       "details": "Login successful, access token received",
-      "timestamp": "2025-10-21T21:44:38.791317"
+      "timestamp": "2025-10-21T21:45:24.804772"
     },
     {
       "test": "2e. Auth Me Endpoint",
       "success": true,
       "details": "Me endpoint returned correct user data",
-      "timestamp": "2025-10-21T21:44:38.842246"
+      "timestamp": "2025-10-21T21:45:24.846762"
     },
     {
       "test": "3a. Create Organization",
       "success": true,
-      "details": "Org 'TestOrg_1761083075' created with ID 826ebcad-3059-4f45-b6f1-b5f1d297841d",
-      "timestamp": "2025-10-21T21:44:38.908362"
+      "details": "Org 'TestOrg_1761083122' created with ID 70e7f2a7-aed4-4d6a-b7fc-0e3e5d977d76",
+      "timestamp": "2025-10-21T21:45:24.886702"
     },
     {
       "test": "3b. List Orgs with RBAC",
       "success": true,
       "details": "Found 1 orgs, including created org",
-      "timestamp": "2025-10-21T21:44:38.954107"
-    },
-    {
-      "test": "4a. Xero OAuth Start",
-      "success": false,
-      "details": "OAuth start failed: {'detail': {'code': 'LIMIT_EXCEEDED', 'limit': 'connectors', 'allowed': 0, 'current': 0}, 'actual_status': 403, 'expected_status': 200}",
-      "timestamp": "2025-10-21T21:44:39.012681"
+      "timestamp": "2025-10-21T21:45:24.924081"
     },
     {
       "test": "5a. Billing Entitlements",
       "success": true,
       "details": "Entitlements returned: tier=FREE, limits={'companies': 1, 'connectors': 0, 'exports': False, 'alerts': False}",
-      "timestamp": "2025-10-21T21:44:39.058114"
+      "timestamp": "2025-10-21T21:45:24.961250"
     },
     {
       "test": "5b. Start Lite Trial (First)",
       "success": true,
       "details": "Lite trial started successfully",
-      "timestamp": "2025-10-21T21:44:39.111529"
+      "timestamp": "2025-10-21T21:45:25.000440"
     },
     {
       "test": "5c. Start Lite Trial (Repeat)",
       "success": true,
       "details": "Correctly returned 409 for repeat trial",
-      "timestamp": "2025-10-21T21:44:39.152538"
+      "timestamp": "2025-10-21T21:45:25.079242"
     },
     {
       "test": "5d. Entitlements Reflect LITE",
       "success": true,
       "details": "LITE plan confirmed: connectors=1, exports=True",
-      "timestamp": "2025-10-21T21:44:40.191735"
+      "timestamp": "2025-10-21T21:45:26.118197"
+    },
+    {
+      "test": "4a. Xero OAuth Start",
+      "success": true,
+      "details": "OAuth start successful, auth_url: https://finance-hub-225.preview.emergentagent.com/...",
+      "timestamp": "2025-10-21T21:45:26.165261"
+    },
+    {
+      "test": "4b. Xero OAuth Callback",
+      "success": false,
+      "details": "Callback failed: {'ok': False, 'error': \"name 'RedirectResponse' is not defined\", 'actual_status': 500, 'expected_status': 302}",
+      "timestamp": "2025-10-21T21:45:26.247924"
     },
     {
       "test": "6a. Start Sync Job",
       "success": true,
-      "details": "Sync job started: JOB_6f859ab9-304b-4424-ac79-5ff8ef6cd30e",
-      "timestamp": "2025-10-21T21:44:40.282697"
+      "details": "Sync job started: JOB_c09f791d-0b3b-4d31-84ba-0e799d3e15db",
+      "timestamp": "2025-10-21T21:45:26.286235"
     },
     {
       "test": "6b. Get Latest Sync Job",
       "success": true,
-      "details": "Latest job matches started job: JOB_6f859ab9-304b-4424-ac79-5ff8ef6cd30e",
-      "timestamp": "2025-10-21T21:44:40.366651"
+      "details": "Latest job matches started job: JOB_c09f791d-0b3b-4d31-84ba-0e799d3e15db",
+      "timestamp": "2025-10-21T21:45:26.325455"
     },
     {
       "test": "6c. Get Sync Job by ID",
       "success": true,
       "details": "Job found with progress: 0.1",
-      "timestamp": "2025-10-21T21:44:40.404443"
+      "timestamp": "2025-10-21T21:45:26.365375"
     },
     {
       "test": "6d. Sync Job Errors Array",
       "success": true,
       "details": "Errors array properly structured: 0 errors",
-      "timestamp": "2025-10-21T21:44:40.404474"
+      "timestamp": "2025-10-21T21:45:26.365408"
     },
     {
       "test": "7a. Finance Dashboard",
       "success": true,
-      "details": "Dashboard data returned, last_sync_at: None",
-      "timestamp": "2025-10-21T21:44:40.504381"
+      "details": "Dashboard data returned, last_sync_at: 2025-10-21T21:45:26.243087+00:00",
+      "timestamp": "2025-10-21T21:45:26.409365"
     },
     {
       "test": "7b. Finance Trends",
-      "success": false,
-      "details": "Finance trends failed: {'detail': [{'type': 'missing', 'loc': ['query', 'org_id'], 'msg': 'Field required', 'input': None, 'url': 'https://errors.pydantic.dev/2.12/v/missing'}], 'actual_status': 422, 'expected_status': 200}",
-      "timestamp": "2025-10-21T21:44:40.543878"
+      "success": true,
+      "details": "Trends returned 4 series: ['revenue', 'gm_pct', 'opex', 'dso_days']",
+      "timestamp": "2025-10-21T21:45:26.448427"
     },
     {
       "test": "8. Connections Status",
-      "success": false,
-      "details": "Connections status failed: {'detail': [{'type': 'missing', 'loc': ['query', 'org_id'], 'msg': 'Field required', 'input': None, 'url': 'https://errors.pydantic.dev/2.12/v/missing'}], 'actual_status': 422, 'expected_status': 200}",
-      "timestamp": "2025-10-21T21:44:40.581633"
+      "success": true,
+      "details": "Connections status returned: ['xero']",
+      "timestamp": "2025-10-21T21:45:26.489184"
     }
   ],
   "test_data": {
-    "user_email": "test_user_1761083075_6676@example.com",
-    "org_id": "826ebcad-3059-4f45-b6f1-b5f1d297841d",
-    "org_name": "TestOrg_1761083075"
+    "user_email": "test_user_1761083122_3571@example.com",
+    "org_id": "70e7f2a7-aed4-4d6a-b7fc-0e3e5d977d76",
+    "org_name": "TestOrg_1761083122"
   }
 }
