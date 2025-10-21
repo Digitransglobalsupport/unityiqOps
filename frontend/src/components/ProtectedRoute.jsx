@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useOrg } from "@/context/OrgContext";
 
-export default function ProtectedRoute({ children, minRole = "VIEWER", requireVerified = false }) {
+export default function ProtectedRoute({ children, minRole = "VIEWER", requireVerified = false, allowOrgless = false }) {
   const { isAuthenticated, user, loading } = useAuth();
   const { currentOrgId, memberships } = useOrg();
 
@@ -11,13 +11,14 @@ export default function ProtectedRoute({ children, minRole = "VIEWER", requireVe
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (requireVerified && !user?.email_verified) return <Navigate to="/verify" replace />;
 
-  // If user has no organisations yet, take them to onboarding
-  if (requireVerified && (Array.isArray(memberships) && memberships.length === 0)) {
-    return <Navigate to="/onboarding" replace />;
-  }
-  // If verified but no current org selected yet, also send to onboarding to pick/create one
-  if (requireVerified && !currentOrgId) {
-    return <Navigate to="/onboarding" replace />;
+  // If user has no organisations yet or none selected, optionally allow the page to handle it
+  if (requireVerified && !allowOrgless) {
+    if (Array.isArray(memberships) && memberships.length === 0) {
+      return <Navigate to="/onboarding" replace />;
+    }
+    if (!currentOrgId) {
+      return <Navigate to="/onboarding" replace />;
+    }
   }
 
   const ROLES = ["VIEWER","ANALYST","ADMIN","OWNER"];
