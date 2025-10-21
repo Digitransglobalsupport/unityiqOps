@@ -117,23 +117,56 @@
         comment: "Code review confirms all orgless hardening features are correctly implemented: 1) NavBar shows create-org-nav for verified orgless users (NavBar.jsx:45-46), 2) Dashboard pages have orgless-prompt cards with Go to Onboarding CTA when !currentOrgId, 3) ProtectedRoute allows orgless access with allowOrgless=true, 4) API client properly omits X-Org-Id header when orgless (client.js:50-55), 5) OrgContext has auto-select logic for single membership (OrgContext.jsx:18-23), 6) OnboardingWizard creates orgs and updates localStorage. Automated testing was limited by authentication setup but code implementation is complete and follows requirements."
 
 ## backend:
-  - task: "Lite Trial Upgrade Endpoint"
+  - task: "Lite Trial Upgrade Endpoint - Polished"
     implemented: true
-    working: true
+    working: "NA"
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Added POST /api/billing/start-lite-trial endpoint at line 2426. Endpoint requires ADMIN role, checks current plan tier, upgrades org from FREE to LITE (connectors: 1, companies: 3, exports: true, alerts: true), logs audit entry. Returns success message with new tier."
-      - working: true
-        agent: "testing"
-        comment: "Comprehensive testing completed with 11/11 tests passing (100% success rate). Verified: 1) Authentication required (401 without token), 2) ADMIN role enforcement (403 for VIEWER), 3) Single-org fallback behavior works correctly, 4) Fresh orgs start with FREE plan, 5) Successful upgrade from FREE to LITE with correct response format, 6) Entitlements updated correctly after upgrade (connectors: 1, companies: 3, exports: true, alerts: true), 7) Audit log entry created with proper metadata, 8) Idempotency - subsequent calls return 'Already on LITE plan', 9) FREE plan blocks Xero connections (LIMIT_EXCEEDED), 10) LITE plan allows Xero connections (auth_url returned). Fixed bug in Xero OAuth start endpoint that was returning null - added proper return statements for both live and mock modes."
+        comment: "Enhanced POST /api/billing/start-lite-trial endpoint: Now returns 409 ERR_PLAN_ALREADY_ACTIVATED instead of 200 for idempotency, sets org.ui_prefs.show_snapshot_banner=true, inserts billing_events record with type:trial_started/channel:direct/amount:0, sets entitlements.snapshot_enabled=true, returns full plan/limits/entitlements object. Added POST /api/billing/end-lite-trial (OWNER only) for preview/demo revert from LITE->FREE with billing_events and audit logging."
 
 ## frontend:
-  - task: "Lite Trial UI on Connections Page"
+  - task: "Lite Trial Card Component - Polished"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/LiteTrialCard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created LiteTrialCard component with data-testids (lite-trial-card, lite-trial-cta). Includes optimistic UI (disable button, spinner during request), handles 409 ERR_PLAN_ALREADY_ACTIVATED by refetching and hiding, shows error toast on failure, focus-visible styles, aria-label for accessibility. Copy: 'Start Lite Trial (Export & 1 connector)' with bullets for PDF Snapshot/1 Xero/3 companies. Telemetry logging for trial_trial_started and trial_card_hidden events."
+
+  - task: "Lite Trial Skeleton Loader"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/LiteTrialSkeleton.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created LiteTrialSkeleton component (data-testid: lite-trial-skeleton) with animate-pulse. Shows for ≤1s while entitlements load. Prevents card flicker."
+
+  - task: "Lite Trial Inline CTA (Finance)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/LiteTrialInline.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created LiteTrialInline mini CTA component (data-testid: lite-trial-inline) for Finance header. Small purple button, same upgrade logic as card, handles 409 gracefully. Added to FinanceDashboard.jsx next to title when gates met (FREE+ADMIN+0 connectors)."
+
+  - task: "Connections Page - Polished"
     implemented: true
     working: "NA"
     file: "/app/frontend/src/pages/Connections.jsx"
@@ -143,7 +176,19 @@
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Updated Connections.jsx to: 1) Fetch entitlements on load, 2) Display current plan info banner showing tier and connector usage, 3) Show prominent 'Start Lite Trial' card for FREE plan users with 0 connector limit, listing all LITE benefits (1 Xero connector, 3 companies, exports, alerts), 4) Implement startLiteTrial function that calls /api/billing/start-lite-trial and reloads entitlements/status on success, 5) Add upgrading state with loading button. Card only visible to ADMIN/OWNER roles."
+        comment: "Completely refactored Connections.jsx: Shows LiteTrialSkeleton while loading (≤1s), conditionally renders LiteTrialCard when gates met (role OWNER/ADMIN, tier FREE, connectors 0), handleUpgradeSuccess polls /api/billing/entitlements every 3s for max 30s after upgrade to handle eventual consistency, auto-hides card when plan.tier=LITE detected, tracks trial_card_viewed telemetry when eligible. Removed debug panels (keeping small plan info banner)."
+
+  - task: "Finance Dashboard - Inline CTA"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/FinanceDashboard.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added LiteTrialInline to Finance header when gates met (FREE+ADMIN+0 connectors). Fetches entitlements on mount, shows mini CTA next to 'Finance' title, handleUpgradeSuccess refreshes entitlements and hides inline CTA after successful upgrade."
 
 ## metadata:
   created_by: "main_agent"
