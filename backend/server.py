@@ -1065,31 +1065,45 @@ async def xero_select_tenant(payload: Dict[str, Any], ctx: RequestContext = Depe
     return {"ok": True}
 
 @api.post("/connections/xero/oauth/callback")
-async def xero_callback(body: Dict[str, Any]):
+async def xero_callback(code: str = Form(...), state: str = Form(...)):
+    """Mock OAuth callback - accepts form data from mock consent page"""
     try:
         # Store mock tokens encrypted under org_id resolved via state
-        state = body.get("state")
         st = await db.oauth_states.find_one({"state": state})
-        org_id = (st or {}).get("org_id") or body.get("org_id")
-        code = body.get("code") or "MOCK_CODE"
-        tenant_id = "MOCK_TENANT_1"
+        org_id = (st or {}).get("org_id")
         if not org_id:
-            raise HTTPException(status_code=400, detail="org_id required")
+            raise HTTPException(status_code=400, detail="Invalid state or org_id not found")
+        
+        tenant_id = "MOCK_TENANT_1"
         enc_access = aesgcm_encrypt_for_org(org_id, f"access::{code}")
         enc_refresh = aesgcm_encrypt_for_org(org_id, f"refresh::{code}")
+        
+        # Create mock tenant data
+        mock_tenants = [{
+            "tenantId": tenant_id,
+            "tenantType": "ORGANISATION",
+            "tenantName": "Mock Demo Company"
+        }]
+        
         await db.connections.update_one(
             {"org_id": org_id, "vendor": "xero"},
             {"$set": {
                 "org_id": org_id,
                 "vendor": "xero",
-                "tenant_id": tenant_id,
+                "default_tenant_id": tenant_id,
                 "access_token_enc": enc_access,
                 "refresh_token_enc": enc_refresh,
+                "tenants": mock_tenants,
                 "scopes": ["accounting.reports.read","accounting.transactions.read","accounting.settings.read","offline_access","openid","profile","email"],
+                "last_sync_at": datetime.now(timezone.utc).isoformat(),
                 "updated_at": datetime.now(timezone.utc)
             }},
             upsert=True
         )
+        
+        # Log audit entry
+        await audit_log_entry(org_id, None, "connect", "xero_mock", {"tenant_id": tenant_id})
+        
         return RedirectResponse(url="/connections?connected=1", status_code=302)
     except HTTPException:
         raise
