@@ -64,6 +64,18 @@ export default function FinanceDashboard() {
     catch(e){ alert(e?.response?.data?.detail || "Failed to start OAuth"); }
   };
 
+  const handleUpgradeSuccess = async (data) => {
+    // Reload entitlements after upgrade
+    await loadEntitlements();
+    await load();
+  };
+
+  // Check if we should show inline trial CTA
+  const showInlineCTA = entitlements && 
+                        canAdmin && 
+                        entitlements.plan?.tier === 'FREE' && 
+                        entitlements.limits?.connectors === 0;
+
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-600">{String(error)}</div>;
 
