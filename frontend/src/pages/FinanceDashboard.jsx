@@ -9,6 +9,7 @@ import JobBar from "@/components/JobBar";
 import LiteTrialInline from "@/components/LiteTrialInline";
 import InlineErrorBanner from "@/components/InlineErrorBanner";
 import useRetriable from "@/hooks/useRetriable";
+import formatRelativeTime, { lastSyncClass } from "@/utils/formatRelativeTime";
 
 export default function FinanceDashboard() {
   const { currentOrgId, role } = useOrg();
