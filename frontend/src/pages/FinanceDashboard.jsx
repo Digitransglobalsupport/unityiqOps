@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "@/api/client";
@@ -6,6 +6,7 @@ import { useOrg } from "@/context/OrgContext";
 import DataHealthPill from "@/components/DataHealthPill";
 import ChecklistPanel from "@/components/ChecklistPanel";
 import JobBar from "@/components/JobBar";
+import LiteTrialInline from "@/components/LiteTrialInline";
 
 export default function FinanceDashboard() {
   const { currentOrgId, role } = useOrg();
@@ -13,6 +14,18 @@ export default function FinanceDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [entitlements, setEntitlements] = useState(null);
+  const canAdmin = ["OWNER","ADMIN"].includes(role||"");
+
+  const loadEntitlements = useCallback(async () => {
+    if (!currentOrgId) return;
+    try {
+      const { data } = await api.get('/billing/entitlements');
+      setEntitlements(data);
+    } catch(e) {
+      console.error('Failed to load entitlements', e);
+    }
+  }, [currentOrgId]);
 
   if (!currentOrgId) {
     return (
