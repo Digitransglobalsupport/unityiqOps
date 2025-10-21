@@ -21,11 +21,11 @@
 # ##     working: true  # or false or "NA"
 # ##     file: "file_path.py"
 # ##     stuck_count: 0
-# ##     priority: "high"  # or "medium" or "low"
+# ##     priority: "high"
 # ##     needs_retesting: false
 # ##     status_history:
 # ##         -working: true  # or false or "NA"
-# ##         -agent: "main"  # or "testing" or "user"
+# ##         -agent: "main"
 # ##         -comment: "Detailed comment about status"
 # ##
 # ## frontend:
@@ -34,7 +34,7 @@
 # ##     working: true  # or false or "NA"
 # ##     file: "file_path.js"
 # ##     stuck_count: 0
-# ##     priority: "high"  # or "medium" or "low"
+# ##     priority: "high"
 # ##     needs_retesting: false
 # ##     status_history:
 # ##         -working: true  # or false or "NA"
@@ -54,7 +54,7 @@
 # ##   stuck_tasks:
 # ##     - "Task name with persistent issues"
 # ##   test_all: false
-# ##   test_priority: "high_first"  # or "sequential" or "stuck_first"
+# ##   test_priority: "high_first"
 # ##
 # ## agent_communication:
 # ##     -agent: "main"  # or "testing" or "user"
@@ -101,55 +101,30 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 
-  - task: "Snapshot PDF – 30-Day Action Plan section"
+  - task: "Orgless onboarding hardening"
     implemented: true
     working: "NA"
-    file: "/app/backend/server.py"
+    file: "/app/frontend/src/**/*.jsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Implemented build_action_plan() selection/grouping and render_action_plan_section() with owner groups, totals banner, table, footnotes, and empty state. Integrated into POST /api/export/snapshot with currency formatting helper and no-op telemetry track(). Seeded LITE plan in /api/demo/seed to allow export during tests."
-  - task: "UnityIQ – Job Monitor & Run now (backend)"
-    implemented: true
-    working: true
-    file: "/app/backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Added POST /api/sync-jobs/start (idempotent, lock-safe), GET /api/sync-jobs/{job_id}, GET /api/sync-jobs/latest. Async worker updates phases, progress, ETA, errors. RBAC, rate limits, telemetry included."
-      - working: true
-        agent: "testing"
-        comment: "Comprehensive testing completed with 95.8% success rate (23/24 tests passed). RBAC working: VIEWER denied POST /sync-jobs/start (403), ANALYST+ allowed. Rate limiting working: 10/min mutations, 60/min reads. Idempotency working: second start request returns 202 with status='existing' and same job_id. Phase progression working: progress increases 0.0→1.0, ETA decreases, phases progress through ingest→metrics→done (rapid execution skips initial queued/discover phases). Latest helper working: returns most recent job with/without type filter. Multi-tenant safety: cross-org job access returns 404. Telemetry working: refresh_start/refresh_done events logged. Minor: Fixed JSON serialization issues with datetime objects in job responses."
-
-## frontend:
-  - task: "UnityIQ – JobBar UI"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/components/JobBar.jsx, /app/frontend/src/pages/FinanceDashboard.jsx"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Added JobBar with run-now, phase label, progress, ETA, and errors accordion. Polls /sync-jobs endpoints. RBAC gating for run button (ANALYST+)."
+        comment: "Added Navbar create-org-nav when verified+orgless, allowOrgless on Finance/Customers/Vendors, orgless prompts with CTA, header omission for X-Org-Id when null, OrgContext auto-select when one membership."
 
 ## metadata:
   created_by: "main_agent"
-  version: "1.5"
-  test_sequence: 6
-  run_ui: false
+  version: "1.6"
+  test_sequence: 7
+  run_ui: true
 
 ## test_plan:
   current_focus:
-    - "UnityIQ – Job Monitor & Run now end-to-end"
-    - "Snapshot PDF – 30-Day Action Plan section"
+    - "Orgless header omission and CTA rendering"
+    - "Org creation sets current_org_id & refreshes memberships"
+    - "Auto-select when exactly one membership exists"
+    - "No 403/401 spam while orgless"
   stuck_tasks:
     - "None"
   test_all: false
@@ -157,6 +132,4 @@
 
 ## agent_communication:
   - agent: "main"
-    message: "Please run backend tests for /api/sync-jobs/start, /api/sync-jobs/{job_id}, and /api/sync-jobs/latest (RBAC, rate limit, idempotency, phase progression, ETA, and errors). Then smoke the Finance dashboard for JobBar visibility, run-now gating, and polling."
-  - agent: "testing"
-    message: "UnityIQ Job Monitor backend testing completed successfully. All critical functionality working: RBAC (ANALYST+ can start jobs, VIEWER+ can read), rate limiting (10/min mutations, 60/min reads), idempotency (duplicate starts return existing job), phase progression (queued→discover→ingest→metrics→alerts→done with increasing progress and decreasing ETA), latest job helper, multi-tenant isolation, and telemetry logging. Fixed minor JSON serialization issues during testing. Ready for frontend JobBar UI testing."
+    message: "Please run frontend automation: verify orgless Navbar create-org-nav visibility, orgless prompt cards appear on Finance/Customers/Vendors with Go to Onboarding CTA, X-Org-Id header omitted when orgless and present when org selected/created, org creation persists current_org_id and memberships refresh, auto-select when one membership on first load, and no 403/401 spam from org-scoped endpoints while orgless."
