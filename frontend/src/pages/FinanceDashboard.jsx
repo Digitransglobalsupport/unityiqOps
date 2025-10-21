@@ -82,7 +82,10 @@ export default function FinanceDashboard() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-4" data-testid="finance-dashboard">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Finance</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold">Finance</h1>
+          {showInlineCTA && <LiteTrialInline onUpgradeSuccess={handleUpgradeSuccess} />}
+        </div>
         <DataHealthPill connection={data?.connection} onReconnect={reconnect} onRetry={load} />
       </div>
 
