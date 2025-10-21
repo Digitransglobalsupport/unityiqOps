@@ -842,7 +842,7 @@ async def xero_oauth_start(body: Dict[str, Any], ctx: RequestContext = Depends(r
         return {"auth_url": auth_url}
     else:
         # Mock mode - return mock consent URL
-        mock_url = f"{BASE_URL}/api/mock/xero/consent?state={state}"
+        mock_url = f"{APP_URL}/api/mock/xero/consent?state={state}"
         return {"auth_url": mock_url}
 # --- Job Monitor & Run Now (UnityIQ) ---
 from fastapi import Header
