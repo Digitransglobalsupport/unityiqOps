@@ -120,6 +120,16 @@ export default function Connections() {
             Connectors: {entitlements.usage?.connectors || 0} / {entitlements.limits?.connectors || 0} • 
             Exports: {entitlements.limits?.exports ? 'Enabled' : 'Disabled'}
           </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Role: {role || 'none'} • canAdmin: {canAdmin ? 'true' : 'false'}
+          </div>
+        </div>
+      )}
+      
+      {/* Debug info - remove after testing */}
+      {!entitlements && currentOrgId && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+          ⚠️ Entitlements not loaded yet for org: {currentOrgId}
         </div>
       )}
 
