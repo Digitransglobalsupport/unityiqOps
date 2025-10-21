@@ -13,6 +13,8 @@ export default function Connections() {
   const [upgrading, setUpgrading] = useState(false);
   const canAdmin = ["OWNER","ADMIN"].includes(role||"");
 
+  console.log('Connections component render - currentOrgId:', currentOrgId, 'role:', role, 'canAdmin:', canAdmin);
+
   const load = async () => {
     setError(""); setMessage("");
     try { 
