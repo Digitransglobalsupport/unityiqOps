@@ -23,7 +23,33 @@ export default function NavBar() {
                 <DropdownMenu>
                   <DropdownMenuTrigger className="text-sm text-gray-300 hover:text-white">Connections</DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-white text-gray-900 p-1 rounded shadow">
-                    <DropdownMenuItem onClick={async ()=>{ try { const { data } = await api.post('/connections/xero/oauth/start', { org_id: currentOrgId }); window.location.href = data.auth_url; } catch(e) { alert(e?.response?.data?.detail?.code || e?.response?.data?.detail || 'Failed to start Xero'); }}}>Connect to Xero</DropdownMenuItem>
+                    <DropdownMenuItem onClick={async ()=>{
+                      try {
+                        const { data: ents } = await api.get('/billing/entitlements');
+                        const limit = ents?.limits?.connectors ?? 0;
+                        const used = ents?.usage?.connectors ?? 0;
+                        if (!currentOrgId) {
+                          alert('Please select an organisation first.');
+                          return;
+                        }
+                        if (limit === 0 || used >= limit) {
+                          alert(`Your plan allows ${limit} connector(s). Currently connected: ${used}. Manage or upgrade to continue.`);
+                          window.location.href = '/connections';
+                          return;
+                        }
+                        const { data } = await api.post('/connections/xero/oauth/start', { org_id: currentOrgId });
+                        window.location.href = data.auth_url;
+                      } catch(e) {
+                        const d = e?.response?.data?.detail;
+                        const code = typeof d === 'object' ? d.code : d;
+                        if (code === 'LIMIT_EXCEEDED') {
+                          alert('Connector limit reached. Redirecting to manage connections…');
+                          window.location.href = '/connections';
+                        } else {
+                          alert(code || 'Failed to start Xero');
+                        }
+                      }
+                    }}>Connect to Xero</DropdownMenuItem>
                     <DropdownMenuItem onClick={()=>{ window.location.href = '/connections'; }}>Manage connections…</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
