@@ -55,10 +55,10 @@ export default function FinanceDashboard() {
       const { data } = await api.get(`/dashboard/finance?org_id=${currentOrgId}`); 
       setData(data); 
       
-      // Load vendor summary
+      // Load vendor summary (non-critical)
       try {
-        const vendorRes = await api.get(`/vendors/savings-opps?org_id=${currentOrgId}&status=open&limit=100`);
-        const opps = vendorRes.data.opportunities || [];
+        const vendorRes = await api.get(`/opps/savings?org_id=${currentOrgId}&status=open&limit=100`);
+        const opps = vendorRes.data.items || [];
         const totalSavings = opps.reduce((sum, o) => sum + (o.est_saving || 0), 0);
         setVendorSummary({
           shared_vendors_count: new Set(opps.flatMap(o => o.vendors || [])).size,
@@ -66,7 +66,7 @@ export default function FinanceDashboard() {
           opps_count: opps.length
         });
       } catch (e) {
-        console.error('Failed to load vendor summary', e);
+        // keep silent
       }
     }
     catch (e) { setError(e?.response?.data?.detail || "Failed to load"); }
