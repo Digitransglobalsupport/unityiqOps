@@ -15,6 +15,8 @@ export default function FinanceDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [entitlements, setEntitlements] = useState(null);
+  const [vendorSummary, setVendorSummary] = useState(null);
+  const [showScoreDetails, setShowScoreDetails] = useState(false);
   const canAdmin = ["OWNER","ADMIN"].includes(role||"");
 
   const loadEntitlements = useCallback(async () => {
