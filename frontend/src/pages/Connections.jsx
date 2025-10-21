@@ -26,6 +26,10 @@ export default function Connections() {
   const loadEntitlements = async () => {
     try {
       const { data } = await api.get('/billing/entitlements');
+      console.log('Entitlements loaded:', data);
+      console.log('Tier:', data?.plan?.tier);
+      console.log('Connectors limit:', data?.limits?.connectors);
+      console.log('canAdmin:', canAdmin);
       setEntitlements(data);
     } catch(e) {
       console.error('Failed to load entitlements', e);
