@@ -37,6 +37,7 @@ export default function JobBar({ canRun }) {
   };
 
   const pollJob = async (jobId) => {
+    if (document.hidden) return; // pause while hidden
     try {
       const { data } = await api.get(`/sync-jobs/${jobId}`);
       setJob(data);
