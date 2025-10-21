@@ -433,7 +433,11 @@ class LiteTrialTester:
 
     def test_idempotency(self):
         """Test that calling the endpoint again returns 'Already on LITE plan'"""
-        headers = self.get_auth_headers()
+        if not hasattr(self, 'upgraded_org_id'):
+            self.log_test("Idempotency Check", False, "No upgraded org available")
+            return False
+        
+        headers = {"Authorization": f"Bearer {self.access_token}", "X-Org-Id": self.upgraded_org_id}
         
         success, response = self.make_request(
             "POST", 
@@ -442,11 +446,6 @@ class LiteTrialTester:
         )
         
         if success:
-            expected_response = {
-                "ok": True,
-                "message": "Already on LITE plan"
-            }
-            
             if response.get("ok") == True and "Already on LITE plan" in response.get("message", ""):
                 self.log_test("Idempotency Check", True, f"Correctly returned 'Already on LITE plan': {response}")
                 return True
