@@ -870,7 +870,20 @@ async def _job_public(job: Dict[str, Any]) -> Dict[str, Any]:
 
 async def _append_error(org_id: str, job_id: str, phase: str, code: str, message: str, details: Dict[str, Any] | None = None):
     err = {"phase": phase, "code": code, "message": message, "at": await _now_iso(), "details": (details or {})}
-    await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$push": {"errors": {"$each": [err], "$position": 0}}, "$set": {"updated_at": datetime.now(timezone.utc)}})
+    # Cap errors array to latest 50 entries, newest-first
+    await db.sync_jobs.update_one(
+        {"org_id": org_id, "job_id": job_id},
+        {
+            "$push": {
+                "errors": {
+                    "$each": [err],
+                    "$position": 0,
+                    "$slice": 50
+                }
+            },
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
 
 async def _update_job(org_id: str, job_id: str, **fields):
     fields.setdefault("updated_at", datetime.now(timezone.utc))
