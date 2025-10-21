@@ -18,7 +18,7 @@ export default function NavBar() {
           <>
             <Link data-testid="nav-members-link" to="/members" className="text-sm text-gray-300 hover:text-white">Members</Link>
             <Link data-testid="nav-dev-emails-link" to="/dev/emails" className="text-sm text-gray-300 hover:text-white">Dev Emails</Link>
-            {(["ADMIN","OWNER"].includes(role||"")) && (
+            {(["ADMIN","OWNER"].includes(role||"")) && currentOrgId && (
               <>
                 <DropdownMenu>
                   <DropdownMenuTrigger className="text-sm text-gray-300 hover:text-white">Connections</DropdownMenuTrigger>
