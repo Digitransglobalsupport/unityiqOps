@@ -76,6 +76,14 @@ export default function CustomersDashboard() {
         <div className="text-sm text-gray-600">{stats && <>Masters: <b>{stats.masters}</b> • Shared: <b>{stats.shared_accounts}</b> • Avg conf: <b>{stats.avg_conf}</b></>}</div>
       </div>
 
+      {/* Last sync chip */}
+      <div className="flex items-center justify-between mb-2">
+        <div />
+        <div data-testid="customers-last-sync-chip" className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
+          Last sync: —
+        </div>
+      </div>
+
       <div className="mb-4 flex items-center gap-3">
         <input data-testid="cust-search" className="border rounded px-3 py-1" placeholder="Search name/email/domain" value={q} onChange={(e)=>setQ(e.target.value)} />
         <label className="text-sm">Min confidence</label>
