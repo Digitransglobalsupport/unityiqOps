@@ -153,12 +153,7 @@
 
 ## test_plan:
   current_focus:
-    - "Lite Trial Upgrade Endpoint - POST /api/billing/start-lite-trial"
-    - "Connections page displays plan info banner"
-    - "Start Lite Trial button visible for FREE plan ADMIN/OWNER"
-    - "Trial upgrade updates plan tier to LITE in database"
-    - "Entitlements refresh shows new limits after upgrade"
-    - "Xero connection becomes available after upgrade"
+    - "Lite Trial UI on Connections Page"
   stuck_tasks:
     - "None"
   test_all: false
