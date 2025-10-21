@@ -2489,6 +2489,57 @@ async def start_lite_trial(ctx: RequestContext = Depends(require_role("ADMIN")))
         "entitlements": {"snapshot_enabled": True}
     }
 
+@api.post("/billing/end-lite-trial")
+async def end_lite_trial(ctx: RequestContext = Depends(require_role("OWNER"))):
+    """Preview-only: revert LITE trial back to FREE (for demo/testing)"""
+    if not ctx.org_id:
+        raise HTTPException(status_code=400, detail="No org selected")
+    now = datetime.now(timezone.utc)
+    current_limits = await get_plan_limits(ctx.org_id)
+    current_tier = current_limits.get("tier", "FREE")
+    
+    # Only allow reverting from LITE to FREE
+    if current_tier != "LITE":
+        raise HTTPException(status_code=400, detail=f"Can only end LITE trial. Current tier: {current_tier}")
+    
+    # Revert to FREE
+    await db.plans.update_one(
+        {"org_id": ctx.org_id},
+        {"$set": {
+            "org_id": ctx.org_id,
+            "tier": "FREE",
+            "limits": {
+                "companies": 1,
+                "connectors": 0,
+                "exports": False,
+                "alerts": False
+            },
+            "entitlements": {},
+            "updated_at": now
+        }},
+        upsert=True
+    )
+    
+    # Log billing event
+    await db.billing_events.insert_one({
+        "org_id": ctx.org_id,
+        "user_id": ctx.user_id,
+        "type": "trial_ended",
+        "channel": "direct",
+        "amount": 0,
+        "tier": "FREE",
+        "created_at": now
+    })
+    
+    # Audit trail
+    await audit_log_entry(ctx.org_id, ctx.user_id, "billing_trial_end", "plan_free_revert", {"from": "LITE", "to": "FREE"})
+    
+    return {
+        "ok": True,
+        "message": "Trial ended, reverted to FREE plan",
+        "plan": {"tier": "FREE"}
+    }
+
 # NOTE: The block below was incorrectly appended due to a prior edit; cleaning up to fix indentation/syntax.
 
 # --- Demo Seed ---
