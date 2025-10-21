@@ -1875,7 +1875,7 @@ async def customers_master(org_id: str, q: Optional[str] = None, min_conf: float
         {"master_id": m.get("master_id"), "canonical_name": m.get("canonical_name"), "confidence": m.get("confidence"), "companies": [c.get("company_id") for c in m.get("companies", []) if c.get("company_id")], "emails": m.get("emails", []), "domains": m.get("domains", []), "review_state": m.get("review_state")}
         for m in filt[start:end]
     ]
-    return {"stats": stats, "items": out_items, "cursor": next_cursor}
+    return {"stats": stats, "items": out_items, "cursor": next_cursor, "last_sync_at": last_sync_at}
 
 @api.get("/opps/cross-sell")
 async def opps_cross_sell(org_id: str, status: str = "open", limit: int = 50, ctx: RequestContext = Depends(require_role("VIEWER"))):
