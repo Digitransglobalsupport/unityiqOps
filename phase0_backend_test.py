@@ -511,11 +511,11 @@ class Phase0BackendTester:
             print("❌ Critical: Org creation/RBAC failed")
             return False
         
-        # Test 4: Xero mock OAuth
-        self.test_4_xero_mock_oauth()
-        
-        # Test 5: Billing entitlements and Lite trial
+        # Test 5: Billing entitlements and Lite trial (must come before Xero OAuth)
         self.test_5_billing_entitlements_and_lite_trial()
+        
+        # Test 4: Xero mock OAuth (after Lite trial upgrade)
+        self.test_4_xero_mock_oauth()
         
         # Test 6: Sync job monitor APIs
         self.test_6_sync_job_monitor_apis()
