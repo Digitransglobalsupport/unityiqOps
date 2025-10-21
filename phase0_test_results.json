@@ -1,0 +1,134 @@
+{
+  "summary": {
+    "total_tests": 20,
+    "passed_tests": 17,
+    "success_rate": 85.0
+  },
+  "detailed_results": [
+    {
+      "test": "1. Health Endpoint",
+      "success": true,
+      "details": "Health check returned {ok: true}",
+      "timestamp": "2025-10-21T21:44:36.041823"
+    },
+    {
+      "test": "2a. Auth Signup",
+      "success": true,
+      "details": "User test_user_1761083075_6676@example.com created successfully",
+      "timestamp": "2025-10-21T21:44:36.415359"
+    },
+    {
+      "test": "2b. Auth Verify Email Sent",
+      "success": true,
+      "details": "Verification email found in dev store",
+      "timestamp": "2025-10-21T21:44:38.460521"
+    },
+    {
+      "test": "2c. Auth Email Verification",
+      "success": true,
+      "details": "Email verified successfully",
+      "timestamp": "2025-10-21T21:44:38.504647"
+    },
+    {
+      "test": "2d. Auth Login",
+      "success": true,
+      "details": "Login successful, access token received",
+      "timestamp": "2025-10-21T21:44:38.791317"
+    },
+    {
+      "test": "2e. Auth Me Endpoint",
+      "success": true,
+      "details": "Me endpoint returned correct user data",
+      "timestamp": "2025-10-21T21:44:38.842246"
+    },
+    {
+      "test": "3a. Create Organization",
+      "success": true,
+      "details": "Org 'TestOrg_1761083075' created with ID 826ebcad-3059-4f45-b6f1-b5f1d297841d",
+      "timestamp": "2025-10-21T21:44:38.908362"
+    },
+    {
+      "test": "3b. List Orgs with RBAC",
+      "success": true,
+      "details": "Found 1 orgs, including created org",
+      "timestamp": "2025-10-21T21:44:38.954107"
+    },
+    {
+      "test": "4a. Xero OAuth Start",
+      "success": false,
+      "details": "OAuth start failed: {'detail': {'code': 'LIMIT_EXCEEDED', 'limit': 'connectors', 'allowed': 0, 'current': 0}, 'actual_status': 403, 'expected_status': 200}",
+      "timestamp": "2025-10-21T21:44:39.012681"
+    },
+    {
+      "test": "5a. Billing Entitlements",
+      "success": true,
+      "details": "Entitlements returned: tier=FREE, limits={'companies': 1, 'connectors': 0, 'exports': False, 'alerts': False}",
+      "timestamp": "2025-10-21T21:44:39.058114"
+    },
+    {
+      "test": "5b. Start Lite Trial (First)",
+      "success": true,
+      "details": "Lite trial started successfully",
+      "timestamp": "2025-10-21T21:44:39.111529"
+    },
+    {
+      "test": "5c. Start Lite Trial (Repeat)",
+      "success": true,
+      "details": "Correctly returned 409 for repeat trial",
+      "timestamp": "2025-10-21T21:44:39.152538"
+    },
+    {
+      "test": "5d. Entitlements Reflect LITE",
+      "success": true,
+      "details": "LITE plan confirmed: connectors=1, exports=True",
+      "timestamp": "2025-10-21T21:44:40.191735"
+    },
+    {
+      "test": "6a. Start Sync Job",
+      "success": true,
+      "details": "Sync job started: JOB_6f859ab9-304b-4424-ac79-5ff8ef6cd30e",
+      "timestamp": "2025-10-21T21:44:40.282697"
+    },
+    {
+      "test": "6b. Get Latest Sync Job",
+      "success": true,
+      "details": "Latest job matches started job: JOB_6f859ab9-304b-4424-ac79-5ff8ef6cd30e",
+      "timestamp": "2025-10-21T21:44:40.366651"
+    },
+    {
+      "test": "6c. Get Sync Job by ID",
+      "success": true,
+      "details": "Job found with progress: 0.1",
+      "timestamp": "2025-10-21T21:44:40.404443"
+    },
+    {
+      "test": "6d. Sync Job Errors Array",
+      "success": true,
+      "details": "Errors array properly structured: 0 errors",
+      "timestamp": "2025-10-21T21:44:40.404474"
+    },
+    {
+      "test": "7a. Finance Dashboard",
+      "success": true,
+      "details": "Dashboard data returned, last_sync_at: None",
+      "timestamp": "2025-10-21T21:44:40.504381"
+    },
+    {
+      "test": "7b. Finance Trends",
+      "success": false,
+      "details": "Finance trends failed: {'detail': [{'type': 'missing', 'loc': ['query', 'org_id'], 'msg': 'Field required', 'input': None, 'url': 'https://errors.pydantic.dev/2.12/v/missing'}], 'actual_status': 422, 'expected_status': 200}",
+      "timestamp": "2025-10-21T21:44:40.543878"
+    },
+    {
+      "test": "8. Connections Status",
+      "success": false,
+      "details": "Connections status failed: {'detail': [{'type': 'missing', 'loc': ['query', 'org_id'], 'msg': 'Field required', 'input': None, 'url': 'https://errors.pydantic.dev/2.12/v/missing'}], 'actual_status': 422, 'expected_status': 200}",
+      "timestamp": "2025-10-21T21:44:40.581633"
+    }
+  ],
+  "test_data": {
+    "user_email": "test_user_1761083075_6676@example.com",
+    "org_id": "826ebcad-3059-4f45-b6f1-b5f1d297841d",
+    "org_name": "TestOrg_1761083075"
+  }
+}
