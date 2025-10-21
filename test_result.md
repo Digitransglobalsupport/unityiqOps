@@ -116,6 +116,32 @@
         agent: "testing"
         comment: "Code review confirms all orgless hardening features are correctly implemented: 1) NavBar shows create-org-nav for verified orgless users (NavBar.jsx:45-46), 2) Dashboard pages have orgless-prompt cards with Go to Onboarding CTA when !currentOrgId, 3) ProtectedRoute allows orgless access with allowOrgless=true, 4) API client properly omits X-Org-Id header when orgless (client.js:50-55), 5) OrgContext has auto-select logic for single membership (OrgContext.jsx:18-23), 6) OnboardingWizard creates orgs and updates localStorage. Automated testing was limited by authentication setup but code implementation is complete and follows requirements."
 
+## backend:
+  - task: "Lite Trial Upgrade Endpoint"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added POST /api/billing/start-lite-trial endpoint at line 2426. Endpoint requires ADMIN role, checks current plan tier, upgrades org from FREE to LITE (connectors: 1, companies: 3, exports: true, alerts: true), logs audit entry. Returns success message with new tier."
+
+## frontend:
+  - task: "Lite Trial UI on Connections Page"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/Connections.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Updated Connections.jsx to: 1) Fetch entitlements on load, 2) Display current plan info banner showing tier and connector usage, 3) Show prominent 'Start Lite Trial' card for FREE plan users with 0 connector limit, listing all LITE benefits (1 Xero connector, 3 companies, exports, alerts), 4) Implement startLiteTrial function that calls /api/billing/start-lite-trial and reloads entitlements/status on success, 5) Add upgrading state with loading button. Card only visible to ADMIN/OWNER roles."
+
 ## metadata:
   created_by: "main_agent"
   version: "1.6"
