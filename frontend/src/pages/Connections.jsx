@@ -63,6 +63,21 @@ export default function Connections() {
     }
   };
 
+  const startLiteTrial = async () => {
+    setError(""); setMessage(""); setUpgrading(true);
+    try {
+      const { data } = await api.post('/billing/start-lite-trial');
+      setMessage(data.message || "Successfully upgraded to LITE plan!");
+      // Reload entitlements and status
+      await loadEntitlements();
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.detail || "Failed to start trial");
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
   useEffect(()=>{
     let timer;
     const poll = async () => {
