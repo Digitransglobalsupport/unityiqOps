@@ -48,6 +48,10 @@ api.interceptors.request.use((config) => {
   const orgId = tokenStore.orgId;
   if (token) config.headers["Authorization"] = `Bearer ${token}`;
   if (orgId) config.headers["X-Org-Id"] = orgId;
+  else {
+    // Ensure we OMIT the header entirely when orgless
+    if (config.headers && config.headers["X-Org-Id"]) delete config.headers["X-Org-Id"];
+  }
   return config;
 });
 
