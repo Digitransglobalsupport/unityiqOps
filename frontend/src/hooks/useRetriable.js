@@ -76,7 +76,6 @@ export default function useRetriable(fetchFn, opts = {}) {
         doFetch();
       }, delay * 1000);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt, fetchFn, maxAttempts, onSuccess, onFail]);
 
   const start = useCallback(() => {
