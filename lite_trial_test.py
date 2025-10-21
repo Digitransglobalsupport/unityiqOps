@@ -552,6 +552,7 @@ class LiteTrialTester:
         print("-" * 40)
         
         self.test_idempotency()
+        self.test_xero_connection_blocked_on_free()
         self.test_xero_connection_available()
         
         return True
