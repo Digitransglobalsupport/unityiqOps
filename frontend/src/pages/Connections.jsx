@@ -5,18 +5,39 @@ import { useOrg } from "@/context/OrgContext";
 export default function Connections() {
   const { currentOrgId, role } = useOrg();
   const [status, setStatus] = useState(null);
+  const [entitlements, setEntitlements] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [job, setJob] = useState(null);
   const [polling, setPolling] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const canAdmin = ["OWNER","ADMIN"].includes(role||"");
 
   const load = async () => {
     setError(""); setMessage("");
-    try { const { data } = await api.get(`/connections/status?org_id=${currentOrgId}`); setStatus(data); } catch(e){ setError(e?.response?.data?.detail || "Failed to load"); }
+    try { 
+      const { data } = await api.get(`/connections/status?org_id=${currentOrgId}`); 
+      setStatus(data); 
+    } catch(e){ 
+      setError(e?.response?.data?.detail || "Failed to load"); 
+    }
   };
 
-  useEffect(()=>{ if(currentOrgId) load(); }, [currentOrgId]);
+  const loadEntitlements = async () => {
+    try {
+      const { data } = await api.get('/billing/entitlements');
+      setEntitlements(data);
+    } catch(e) {
+      console.error('Failed to load entitlements', e);
+    }
+  };
+
+  useEffect(()=>{ 
+    if(currentOrgId) {
+      load(); 
+      loadEntitlements();
+    }
+  }, [currentOrgId]);
 
   const connectXero = async () => {
     try {
