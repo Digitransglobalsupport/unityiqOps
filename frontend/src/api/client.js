@@ -33,7 +33,9 @@ export const tokenStore = {
     else localStorage.setItem("refresh_token", val);
   },
   get orgId() {
-    return localStorage.getItem("current_org_id");
+    const v = localStorage.getItem("current_org_id");
+    if (!v || v === "null" || v === "undefined" || v === "") return null;
+    return v;
   },
   set orgId(val) {
     if (!val) localStorage.removeItem("current_org_id");
