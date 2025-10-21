@@ -16,12 +16,15 @@ export default function FinanceDashboard() {
 
   if (!currentOrgId) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
+      <div className="max-w-3xl mx-auto p-6" data-testid="orgless-prompt">
         <h1 className="text-2xl font-semibold mb-2">Finance</h1>
         <div className="border rounded bg-white p-6">
-          <div className="text-sm text-gray-700 mb-3">No organisation is selected yet.</div>
-          <div className="text-sm text-gray-600 mb-4">Create or choose your organisation to view your Finance dashboard.</div>
-          <button className="bg-black text-white px-4 py-2 rounded" onClick={()=> navigate('/onboarding')} data-testid="go-to-onboarding">Go to Onboarding</button>
+          <div className="text-base font-medium mb-1">Let’s connect your first company</div>
+          <div className="text-sm text-gray-600 mb-4">Create or select an organisation to begin.</div>
+          <div className="flex items-center gap-3">
+            <button className="bg-black text-white px-4 py-2 rounded" onClick={()=> navigate('/onboarding')} data-testid="go-to-onboarding">Go to Onboarding</button>
+            <a href="/about" className="text-sm underline text-gray-700">Learn more</a>
+          </div>
         </div>
       </div>
     );
