@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 3,
+    "success_rate": 50.0
+  },
+  "detailed_results": [
+    {
+      "test": "Setup: User and Org Creation",
+      "success": true,
+      "details": "Created user lite_trial_test_1761050251@example.com and org LiteTrialTestOrg_1761050253",
+      "timestamp": "2025-10-21T12:37:33.681338"
+    },
+    {
+      "test": "Auth Required: No Token",
+      "success": true,
+      "details": "Correctly rejected request without auth token",
+      "timestamp": "2025-10-21T12:37:33.718963"
+    },
+    {
+      "test": "Auth Required: X-Org-Id Header",
+      "success": false,
+      "details": "Expected 400 'No org selected', got: {'ok': True, 'message': 'Upgraded to LITE plan', 'tier': 'LITE', 'actual_status': 200, 'expected_status': 400}",
+      "timestamp": "2025-10-21T12:37:33.773494"
+    },
+    {
+      "test": "RBAC: VIEWER Denied",
+      "success": true,
+      "details": "VIEWER correctly denied access to lite trial endpoint",
+      "timestamp": "2025-10-21T12:37:36.561486"
+    },
+    {
+      "test": "Initial Plan Check",
+      "success": false,
+      "details": "Expected FREE plan with {'companies': 1, 'connectors': 0, 'exports': False, 'alerts': False}, got tier=LITE, limits={'companies': 3, 'connectors': 1, 'exports': True, 'alerts': True}",
+      "timestamp": "2025-10-21T12:37:36.604012"
+    },
+    {
+      "test": "Lite Trial Upgrade",
+      "success": false,
+      "details": "Expected {'ok': True, 'message': 'Upgraded to LITE plan', 'tier': 'LITE'}, got: {'ok': True, 'message': 'Already on LITE plan'}",
+      "timestamp": "2025-10-21T12:37:36.642494"
+    }
+  ]
+}
