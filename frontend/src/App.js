@@ -34,7 +34,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/accept-invite" element={<AcceptInvite />} />
 
-          <Route path="/dashboard/finance" element={<ProtectedRoute requireVerified={true}><FinanceDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/finance" element={<ProtectedRoute requireVerified={true} allowOrgless={true}><FinanceDashboard /></ProtectedRoute>} />
           <Route path="/dashboard/customers" element={<ProtectedRoute requireVerified={true}><CustomersDashboard /></ProtectedRoute>} />
           <Route path="/dashboard/vendors" element={<ProtectedRoute requireVerified={true}><VendorsDashboard /></ProtectedRoute>} />
 
