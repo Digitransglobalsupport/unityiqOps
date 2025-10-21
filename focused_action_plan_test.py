@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional, List, Tuple
 
 class FocusedActionPlanTester:
-    def __init__(self, base_url: str = "https://synergy-snapshot.preview.emergentagent.com"):
+    def __init__(self, base_url: str = "https://finance-crm-hub.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

@@ -2,7 +2,7 @@
 """
 Stripe Billing Tests for Preview Environment
 Tests webhook validation, auth flow, export gating, checkout creation, and webhook simulation
-Base URL: https://synergy-snapshot.preview.emergentagent.com/api
+Base URL: https://finance-crm-hub.preview.emergentagent.com/api
 """
 
 import requests
