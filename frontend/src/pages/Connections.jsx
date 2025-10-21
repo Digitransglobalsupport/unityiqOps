@@ -80,19 +80,30 @@ export default function Connections() {
     }
   };
 
-  const startLiteTrial = async () => {
-    setError(""); setMessage(""); setUpgrading(true);
-    try {
-      const { data } = await api.post('/billing/start-lite-trial');
-      setMessage(data.message || "Successfully upgraded to LITE plan!");
-      // Reload entitlements and status
-      await loadEntitlements();
-      await load();
-    } catch (e) {
-      setError(e?.response?.data?.detail || "Failed to start trial");
-    } finally {
-      setUpgrading(false);
-    }
+  const handleUpgradeSuccess = async (data) => {
+    setMessage(data?.message || "Successfully upgraded to LITE plan!");
+    
+    // Poll entitlements for up to 30s to handle any eventual consistency
+    let attempts = 0;
+    const maxAttempts = 10; // 10 attempts * 3s = 30s max
+    
+    const pollEntitlements = async () => {
+      attempts++;
+      const ents = await loadEntitlements();
+      
+      if (ents?.plan?.tier === 'LITE') {
+        // Success! Card will auto-hide via render logic
+        console.log('trial_card_hidden', { reason: 'plan_flip' });
+        await load(); // Reload connection status
+        return;
+      }
+      
+      if (attempts < maxAttempts) {
+        setTimeout(pollEntitlements, 3000);
+      }
+    };
+    
+    pollEntitlements();
   };
 
   useEffect(()=>{
