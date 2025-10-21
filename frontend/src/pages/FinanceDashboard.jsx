@@ -100,6 +100,7 @@ export default function FinanceDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-4" data-testid="finance-dashboard">
+      {/* Header strip */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold">Finance</h1>
@@ -108,27 +109,156 @@ export default function FinanceDashboard() {
         <DataHealthPill connection={data?.connection} onReconnect={reconnect} onRetry={load} />
       </div>
 
+      {/* Job Monitor */}
       <JobBar canRun={canRun} />
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-4 gap-3">
         <div className="border rounded bg-white p-3">
-          <div className="text-sm font-medium mb-1">Revenue (latest)</div>
-          <div className="text-2xl font-bold">{data?.kpis?.revenue ?? "-"}</div>
+          <div className="text-sm font-medium mb-1 text-gray-700">Revenue</div>
+          <div className="text-2xl font-bold">
+            {data?.kpis?.revenue ? `£${Math.round(data.kpis.revenue).toLocaleString()}` : "-"}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">{data?.period?.from || 'Latest'}</div>
         </div>
+        
         <div className="border rounded bg-white p-3">
-          <div className="text-sm font-medium mb-1">DSO (days)</div>
+          <div className="text-sm font-medium mb-1 text-gray-700">Gross Margin %</div>
+          <div className="text-2xl font-bold">
+            {data?.kpis?.gm_pct ? `${data.kpis.gm_pct.toFixed(1)}%` : "-"}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Latest period</div>
+        </div>
+        
+        <div className="border rounded bg-white p-3">
+          <div className="text-sm font-medium mb-1 text-gray-700">Opex</div>
+          <div className="text-2xl font-bold">
+            {data?.kpis?.opex ? `£${Math.round(data.kpis.opex).toLocaleString()}` : "-"}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Latest period</div>
+        </div>
+        
+        <div className="border rounded bg-white p-3">
+          <div className="text-sm font-medium mb-1 text-gray-700">DSO (days)</div>
           <div className="text-2xl font-bold">{data?.kpis?.dso_days ?? "-"}</div>
+          <div className="text-xs text-gray-500 mt-1">Days sales outstanding</div>
         </div>
       </div>
 
-      <div className="border rounded bg-white p-3">
-        <div className="text-sm font-medium mb-2">Trends</div>
-        <div className="text-xs text-gray-600">6-month revenue series</div>
-        <ul className="text-xs mt-2 list-disc ml-6">
-          {(data?.series||[]).map((s)=> s.kpi==='revenue' ? s.points.map((p,i)=> (<li key={i}>{p[0]}: {p[1]}</li>)) : null)}
-        </ul>
-      </div>
+      {/* Synergy Score Block */}
+      {data?.score && (
+        <div className="border rounded bg-gradient-to-r from-blue-50 to-indigo-50 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <div className="text-sm font-medium text-gray-700">Synergy Score</div>
+              <div className="text-3xl font-bold text-indigo-600">{data.score.s_fin || 72}</div>
+            </div>
+            <button
+              onClick={() => setShowScoreDetails(!showScoreDetails)}
+              className="text-sm text-indigo-600 hover:text-indigo-800 underline"
+            >
+              {showScoreDetails ? 'Hide details' : 'Why this score?'}
+            </button>
+          </div>
+          
+          {showScoreDetails && data.score.drivers && (
+            <div className="mt-3 pt-3 border-t border-indigo-200 text-sm space-y-2">
+              <div className="font-medium text-gray-700">Score Drivers:</div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {data.score.drivers.gm_delta_pct !== undefined && (
+                  <div className="bg-white p-2 rounded">
+                    <span className="text-gray-600">GM Delta:</span>{' '}
+                    <span className="font-medium">{data.score.drivers.gm_delta_pct}%</span>
+                  </div>
+                )}
+                {data.score.drivers.opex_delta_pct !== undefined && (
+                  <div className="bg-white p-2 rounded">
+                    <span className="text-gray-600">Opex Delta:</span>{' '}
+                    <span className="font-medium">{data.score.drivers.opex_delta_pct}%</span>
+                  </div>
+                )}
+                {data.score.drivers.dso_delta_days !== undefined && (
+                  <div className="bg-white p-2 rounded">
+                    <span className="text-gray-600">DSO Delta:</span>{' '}
+                    <span className="font-medium">{data.score.drivers.dso_delta_days} days</span>
+                  </div>
+                )}
+              </div>
+              {data.score.drivers.notes && data.score.drivers.notes.length > 0 && (
+                <div className="text-xs text-gray-600 mt-2">
+                  {data.score.drivers.notes.map((note, i) => (
+                    <div key={i}>• {note}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
+      {/* Customer Lens Summary */}
+      {data?.customer_lens && (
+        <div className="border rounded bg-white p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold">Customer Lens</h3>
+            <button
+              onClick={() => navigate('/dashboard/customers')}
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              View Customers →
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <div className="text-gray-600">Shared Accounts</div>
+              <div className="text-xl font-bold text-gray-900">{data.customer_lens.shared_accounts || 0}</div>
+            </div>
+            <div>
+              <div className="text-gray-600">Cross-sell Opportunities</div>
+              <div className="text-xl font-bold text-gray-900">{data.customer_lens.cross_sell_count || 0}</div>
+            </div>
+            <div>
+              <div className="text-gray-600">Expected Value</div>
+              <div className="text-xl font-bold text-green-600">
+                £{(data.customer_lens.cross_sell_value || 0).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vendor Lens Summary */}
+      {vendorSummary && (
+        <div className="border rounded bg-white p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold">Vendors Lens</h3>
+            <button
+              onClick={() => navigate('/dashboard/vendors')}
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              View Vendors →
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <div className="text-gray-600">Shared Vendors</div>
+              <div className="text-xl font-bold text-gray-900">{vendorSummary.shared_vendors_count || 0}</div>
+            </div>
+            <div>
+              <div className="text-gray-600">Savings Opportunities</div>
+              <div className="text-xl font-bold text-gray-900">{vendorSummary.opps_count || 0}</div>
+            </div>
+            <div>
+              <div className="text-gray-600">Est. Savings Pipeline</div>
+              <div className="text-xl font-bold text-orange-600">
+                £{(vendorSummary.total_savings || 0).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Plan / Checklist */}
       <ChecklistPanel />
     </div>
   );
