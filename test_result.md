@@ -297,8 +297,7 @@
 
 ## test_plan:
   current_focus:
-    - "Lite Trial backend: POST /api/billing/start-lite-trial with 409 handling and billing_events"
-    - "Lite Trial backend: POST /api/billing/end-lite-trial for demo revert"
+    - "Frontend UI testing for Lite Trial components"
     - "LiteTrialCard component visibility gates and upgrade flow"
     - "LiteTrialSkeleton shows during loading (≤1s)"
     - "LiteTrialInline CTA in Finance header"
