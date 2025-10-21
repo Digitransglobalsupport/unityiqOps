@@ -886,6 +886,17 @@ async def _append_error(org_id: str, job_id: str, phase: str, code: str, message
     )
 
 async def _update_job(org_id: str, job_id: str, **fields):
+    # Monotonic progress enforcement and timestamp bump
+    if "progress" in fields:
+        try:
+            cur = await db.sync_jobs.find_one({"org_id": org_id, "job_id": job_id}, {"_id": 0, "progress": 1})
+            curp = float(cur.get("progress", 0)) if cur else 0.0
+            newp = float(fields.get("progress", 0) or 0)
+            if newp < curp:
+                fields["progress"] = curp
+        except Exception:
+            pass
+
     fields.setdefault("updated_at", datetime.now(timezone.utc))
     await db.sync_jobs.update_one({"org_id": org_id, "job_id": job_id}, {"$set": fields})
 
