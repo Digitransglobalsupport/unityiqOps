@@ -84,10 +84,11 @@ export default function FinanceDashboard() {
 
   useEffect(()=>{ 
     if(currentOrgId) {
+      retry.start();
+      // non-critical summary can be derived after first success in load()
       load();
-      loadEntitlements();
     }
-  }, [currentOrgId, loadEntitlements]);
+  }, [currentOrgId]);
 
   const reconnect = async ()=>{
     try { const { data } = await api.post("/connections/xero/oauth/start", { org_id: currentOrgId }); window.location.href = data.auth_url; }
