@@ -838,6 +838,12 @@ async def xero_oauth_start(body: Dict[str, Any], ctx: RequestContext = Depends(r
         client_id = os.environ.get("XERO_CLIENT_ID")
         redirect_uri = f"{APP_URL}/api/connections/xero/oauth/callback"
         scopes = "accounting.transactions.read accounting.contacts.read accounting.settings.read offline_access openid profile email"
+        auth_url = f"https://login.xero.com/identity/connect/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}&scope={scopes}&state={state}"
+        return {"auth_url": auth_url}
+    else:
+        # Mock mode - return mock consent URL
+        mock_url = f"{BASE_URL}/api/mock/xero/consent?state={state}"
+        return {"auth_url": mock_url}
 # --- Job Monitor & Run Now (UnityIQ) ---
 from fastapi import Header
 
