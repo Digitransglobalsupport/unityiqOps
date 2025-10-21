@@ -69,16 +69,11 @@ export default function VendorsDashboard(){
   };
 
   return (
-      {/* Last sync chip */}
-      <div className="flex items-center justify-between mb-2">
-        <div />
-        <div data-testid="vendors-last-sync-chip" className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
-          Last sync: —
-        </div>
-      </div>
-
     <div className="max-w-6xl mx-auto p-6" data-testid="vendors-dashboard">
-      <div className="text-2xl font-semibold mb-4">Vendors</div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-2xl font-semibold">Vendors</div>
+        <div data-testid="vendors-last-sync-chip" className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">Last sync: —</div>
+      </div>
       <Kpis summary={summary} savings={oppSummary} />
 
       <div className="mt-4 grid md:grid-cols-3 gap-4" data-testid="vendors-board">
