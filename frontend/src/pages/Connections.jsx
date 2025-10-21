@@ -38,10 +38,11 @@ export default function Connections() {
 
   useEffect(()=>{ 
     if(currentOrgId) {
+      console.log('Loading data for org:', currentOrgId, 'Role:', role);
       load(); 
       loadEntitlements();
     }
-  }, [currentOrgId]);
+  }, [currentOrgId, role]);
 
   const connectXero = async () => {
     try {
