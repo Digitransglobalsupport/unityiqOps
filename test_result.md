@@ -144,16 +144,18 @@
 
 ## metadata:
   created_by: "main_agent"
-  version: "1.6"
-  test_sequence: 7
+  version: "1.7"
+  test_sequence: 8
   run_ui: true
 
 ## test_plan:
   current_focus:
-    - "Orgless header omission and CTA rendering"
-    - "Org creation sets current_org_id & refreshes memberships"
-    - "Auto-select when exactly one membership exists"
-    - "No 403/401 spam while orgless"
+    - "Lite Trial Upgrade Endpoint - POST /api/billing/start-lite-trial"
+    - "Connections page displays plan info banner"
+    - "Start Lite Trial button visible for FREE plan ADMIN/OWNER"
+    - "Trial upgrade updates plan tier to LITE in database"
+    - "Entitlements refresh shows new limits after upgrade"
+    - "Xero connection becomes available after upgrade"
   stuck_tasks:
     - "None"
   test_all: false
@@ -161,6 +163,4 @@
 
 ## agent_communication:
   - agent: "main"
-    message: "Please run frontend automation: verify orgless Navbar create-org-nav visibility, orgless prompt cards appear on Finance/Customers/Vendors with Go to Onboarding CTA, X-Org-Id header omitted when orgless and present when org selected/created, org creation persists current_org_id and memberships refresh, auto-select when one membership on first load, and no 403/401 spam from org-scoped endpoints while orgless."
-  - agent: "testing"
-    message: "Orgless onboarding hardening testing completed via code review. All required features are correctly implemented in the codebase: NavBar conditional rendering, dashboard orgless prompts, X-Org-Id header management, auto-select behavior, and org creation flow. Automated UI testing was limited by authentication setup, but code analysis confirms full compliance with requirements. Task marked as working=true."
+    message: "Implemented Lite Trial feature per user request (option A). Backend: Added POST /api/billing/start-lite-trial endpoint requiring ADMIN role that upgrades org from FREE to LITE plan (1 connector, 3 companies, exports enabled, alerts enabled) and logs audit entry. Frontend: Updated Connections.jsx to fetch/display entitlements, show plan info banner, and display prominent 'Start Lite Trial' upgrade card (purple gradient) for FREE plan users listing all LITE benefits. Clicking button calls endpoint, shows success message, and refreshes entitlements. Please test: 1) Endpoint with authenticated ADMIN user on FREE plan, 2) Plan upgrade in database, 3) UI displays trial card correctly, 4) Button functionality and state management, 5) Xero connection available after upgrade."
