@@ -98,6 +98,9 @@ export default function FinanceDashboard() {
                         entitlements.limits?.connectors === 0;
 
   if (loading) return <div className="p-6">Loading...</div>;
+      {/* Inline error banner for retriable loads */}
+      <InlineErrorBanner visible={retry.status === 'retrying' && !retry.suppressed} countdownSec={retry.nextRetrySec} onRetryNow={retry.retryNow} onDismiss={retry.dismiss} />
+
   if (error) return <div className="p-6 text-red-600">{String(error)}</div>;
 
   return (
