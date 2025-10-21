@@ -116,6 +116,23 @@ export default function Connections() {
   return (
     <div className="max-w-4xl mx-auto p-6" data-testid="connections-page">
       <h1 className="text-2xl font-semibold mb-4">Connections</h1>
+      
+      {/* Always visible debug panel */}
+      <div className="mb-4 p-3 bg-gray-100 border border-gray-300 rounded text-xs font-mono">
+        <div><strong>DEBUG INFO:</strong></div>
+        <div>currentOrgId: {currentOrgId || 'NULL'}</div>
+        <div>role: {role || 'NULL'}</div>
+        <div>canAdmin: {canAdmin ? 'true' : 'false'}</div>
+        <div>entitlements loaded: {entitlements ? 'YES' : 'NO'}</div>
+        {entitlements && (
+          <>
+            <div>plan.tier: {entitlements.plan?.tier || 'undefined'}</div>
+            <div>limits.connectors: {entitlements.limits?.connectors ?? 'undefined'}</div>
+            <div>usage.connectors: {entitlements.usage?.connectors ?? 'undefined'}</div>
+          </>
+        )}
+      </div>
+      
       {error && <div className="text-red-600 text-sm mb-2">{String(error)}</div>}
       {message && <div className="text-green-700 text-sm mb-2">{String(message)}</div>}
 
