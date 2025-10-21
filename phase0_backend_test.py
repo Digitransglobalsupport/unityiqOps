@@ -476,7 +476,7 @@ class Phase0BackendTester:
         headers = self.get_auth_headers()
         headers["X-Org-Id"] = self.org_id
         
-        success, response = self.make_request("GET", "/connections/status", headers=headers)
+        success, response = self.make_request("GET", f"/connections/status?org_id={self.org_id}", headers=headers)
         
         if success:
             # Check basic structure
