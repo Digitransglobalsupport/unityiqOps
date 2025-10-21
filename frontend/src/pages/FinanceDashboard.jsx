@@ -52,7 +52,12 @@ export default function FinanceDashboard() {
     finally { setLoading(false); }
   };
 
-  useEffect(()=>{ if(currentOrgId) load(); }, [currentOrgId]);
+  useEffect(()=>{ 
+    if(currentOrgId) {
+      load();
+      loadEntitlements();
+    }
+  }, [currentOrgId, loadEntitlements]);
 
   const reconnect = async ()=>{
     try { const { data } = await api.post("/connections/xero/oauth/start", { org_id: currentOrgId }); window.location.href = data.auth_url; }
