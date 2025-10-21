@@ -303,11 +303,27 @@ class LiteTrialTester:
         return None
 
     def test_initial_free_plan(self):
-        """Test that org starts with FREE plan"""
-        entitlements = self.get_current_entitlements()
+        """Test that a fresh org starts with FREE plan"""
+        # Create a fresh org for this test
+        fresh_org_name = f"FreshTestOrg_{int(time.time())}"
+        headers = {"Authorization": f"Bearer {self.access_token}"}
         
-        if not entitlements:
-            self.log_test("Initial Plan Check", False, "Could not get entitlements")
+        success, response = self.make_request("POST", "/orgs", {
+            "name": fresh_org_name
+        }, headers=headers)
+        
+        if not success or "org_id" not in response:
+            self.log_test("Initial Plan Check: Fresh Org Creation", False, f"Failed to create fresh org: {response}")
+            return False
+        
+        fresh_org_id = response["org_id"]
+        headers["X-Org-Id"] = fresh_org_id
+        
+        # Check entitlements for fresh org
+        success, entitlements = self.make_request("GET", "/billing/entitlements", headers=headers)
+        
+        if not success:
+            self.log_test("Initial Plan Check", False, "Could not get entitlements for fresh org")
             return False
         
         plan = entitlements.get("plan", {})
@@ -324,7 +340,7 @@ class LiteTrialTester:
         limits_match = all(limits.get(k) == v for k, v in expected_limits.items())
         
         if tier == "FREE" and limits_match:
-            self.log_test("Initial Plan Check", True, f"Org correctly starts with FREE plan: {limits}")
+            self.log_test("Initial Plan Check", True, f"Fresh org correctly starts with FREE plan: {limits}")
             return True
         else:
             self.log_test("Initial Plan Check", False, f"Expected FREE plan with {expected_limits}, got tier={tier}, limits={limits}")
