@@ -83,6 +83,7 @@ export default function JobBar({ canRun }) {
   const pct = Math.round((job?.progress || 0) * 100);
   const eta = job?.eta_sec != null && job?.eta_sec > 0 ? `~${Math.floor(job.eta_sec/60)}:${String(job.eta_sec%60).padStart(2,'0')} remaining` : null;
   const errs = Array.isArray(job?.errors) ? job.errors.slice(0,5) : [];
+  const lastSync = job?.updated_at || null;
 
   return (
     <div data-testid="job-bar" className="w-full">
