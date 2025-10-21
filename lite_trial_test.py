@@ -400,9 +400,14 @@ class LiteTrialTester:
 
     def test_entitlements_after_upgrade(self):
         """Test that entitlements are updated after upgrade"""
-        entitlements = self.get_current_entitlements()
+        if not hasattr(self, 'upgraded_org_id'):
+            self.log_test("Entitlements After Upgrade", False, "No upgraded org available")
+            return False
         
-        if not entitlements:
+        headers = {"Authorization": f"Bearer {self.access_token}", "X-Org-Id": self.upgraded_org_id}
+        success, entitlements = self.make_request("GET", "/billing/entitlements", headers=headers)
+        
+        if not success:
             self.log_test("Entitlements After Upgrade", False, "Could not get entitlements")
             return False
         
