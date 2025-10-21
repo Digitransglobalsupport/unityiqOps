@@ -963,27 +963,43 @@ async def run_refresh_job(org_id: str, job_id: str, jtype: str):
         track("refresh_error", {"type": jtype, "job_id": job_id, "phase": "ingest", "code": "INTERNAL"})
 
 @api.get("/mock/xero/consent")
-async def mock_xero_consent(state: str, ctx: RequestContext = Depends(require_role("ADMIN"))):
+async def mock_xero_consent(state: str):
+    """Mock Xero consent page - no auth required as this simulates external OAuth provider"""
     from fastapi.responses import HTMLResponse
     try:
         st = await db.oauth_states.find_one({"state": state})
         if not st:
-            return HTMLResponse("Invalid or expired state", status_code=400)
+            return HTMLResponse("<html><body><h3>Invalid or expired state</h3><p>Please try connecting again from the Connections page.</p></body></html>", status_code=400)
         html = f"""
-        <html><body style='font-family: sans-serif;'>
-        <h3>Mock Xero Consent</h3>
-        <p>State: {state}</p>
-        <form method='post' action='/api/connections/xero/oauth/callback' style='margin-top:16px;'>
-          <input type='hidden' name='code' value='MOCK_CODE'/>
-          <input type='hidden' name='state' value='{state}'/>
-          <input type='hidden' name='org_id' value='{st.get('org_id')}'/>
-          <button type='submit'>Approve</button>
-        </form>
-        </body></html>
+        <html>
+        <head>
+            <title>Mock Xero Consent</title>
+            <style>
+                body {{ font-family: sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; }}
+                h3 {{ color: #13B5EA; }}
+                .info {{ background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 20px 0; }}
+                button {{ background: #13B5EA; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; }}
+                button:hover {{ background: #0E9FD1; }}
+            </style>
+        </head>
+        <body>
+            <h3>🔗 Mock Xero Authorization</h3>
+            <div class="info">
+                <p><strong>This is a simulated Xero OAuth flow.</strong></p>
+                <p>In production, you would be redirected to Xero's authorization page.</p>
+                <p>Click "Approve" below to simulate successful authorization and connect your mock Xero account.</p>
+            </div>
+            <form method='post' action='/api/connections/xero/oauth/callback'>
+              <input type='hidden' name='code' value='MOCK_CODE'/>
+              <input type='hidden' name='state' value='{state}'/>
+              <button type='submit'>✓ Approve Connection</button>
+            </form>
+        </body>
+        </html>
         """
         return HTMLResponse(content=html)
     except Exception as e:
-        return HTMLResponse(f"Error: {str(e)}", status_code=500)
+        return HTMLResponse(f"<html><body><h3>Error</h3><p>{str(e)}</p></body></html>", status_code=500)
 
 
 @api.get("/connections/xero/oauth/callback")
