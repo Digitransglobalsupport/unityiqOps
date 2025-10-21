@@ -513,7 +513,9 @@ class LiteTrialTester:
         )
         
         if success and "auth_url" in response:
-            self.log_test("Xero Connection Available", True, f"Xero OAuth start successful: {response.get('auth_url', '')[:50]}...")
+            auth_url = response.get('auth_url', '')
+            url_preview = auth_url[:50] if auth_url else 'N/A'
+            self.log_test("Xero Connection Available", True, f"Xero OAuth start successful: {url_preview}...")
             return True
         elif not success and response.get("detail", {}).get("code") == "LIMIT_EXCEEDED":
             self.log_test("Xero Connection Available", False, f"Still blocked by connector limit: {response}")
