@@ -456,6 +456,46 @@ class LiteTrialTester:
             self.log_test("Idempotency Check", False, f"Failed: {response}")
             return False
 
+    def test_xero_connection_blocked_on_free(self):
+        """Test that Xero connection is blocked on FREE plan (connector limit = 0)"""
+        # Create a fresh FREE org for this test
+        fresh_org_name = f"FreeConnTestOrg_{int(time.time())}"
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+        
+        success, response = self.make_request("POST", "/orgs", {
+            "name": fresh_org_name
+        }, headers=headers)
+        
+        if not success or "org_id" not in response:
+            self.log_test("Xero Connection Blocked: Fresh Org Creation", False, f"Failed to create fresh org: {response}")
+            return False
+        
+        free_org_id = response["org_id"]
+        headers["X-Org-Id"] = free_org_id
+        
+        # Verify it's FREE plan
+        success, entitlements = self.make_request("GET", "/billing/entitlements", headers=headers)
+        if not success or entitlements.get("plan", {}).get("tier") != "FREE":
+            self.log_test("Xero Connection Blocked: Plan Check", False, f"Org not FREE: {entitlements}")
+            return False
+        
+        # Try to start Xero OAuth (should be blocked by connector limit)
+        success, response = self.make_request(
+            "POST", 
+            "/connections/xero/oauth/start", 
+            data={"org_id": free_org_id},
+            headers=headers,
+            expected_status=403
+        )
+        
+        if success and response.get("detail", {}).get("code") == "LIMIT_EXCEEDED":
+            limit_info = response.get("detail", {})
+            self.log_test("Xero Connection Blocked on FREE", True, f"Correctly blocked: allowed={limit_info.get('allowed')}, current={limit_info.get('current')}")
+            return True
+        else:
+            self.log_test("Xero Connection Blocked on FREE", False, f"Expected 403 LIMIT_EXCEEDED, got: {response}")
+            return False
+
     def test_xero_connection_available(self):
         """Test that Xero connection is now available (connector limit > 0)"""
         if not hasattr(self, 'upgraded_org_id'):
