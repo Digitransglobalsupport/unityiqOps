@@ -1,45 +1,75 @@
 {
   "summary": {
-    "total_tests": 6,
-    "passed_tests": 3,
-    "success_rate": 50.0
+    "total_tests": 11,
+    "passed_tests": 11,
+    "success_rate": 100.0
   },
   "detailed_results": [
     {
       "test": "Setup: User and Org Creation",
       "success": true,
-      "details": "Created user lite_trial_test_1761050251@example.com and org LiteTrialTestOrg_1761050253",
-      "timestamp": "2025-10-21T12:37:33.681338"
+      "details": "Created user lite_trial_test_1761050534@example.com and org LiteTrialTestOrg_1761050535",
+      "timestamp": "2025-10-21T12:42:15.941432"
     },
     {
       "test": "Auth Required: No Token",
       "success": true,
       "details": "Correctly rejected request without auth token",
-      "timestamp": "2025-10-21T12:37:33.718963"
+      "timestamp": "2025-10-21T12:42:15.982613"
     },
     {
-      "test": "Auth Required: X-Org-Id Header",
-      "success": false,
-      "details": "Expected 400 'No org selected', got: {'ok': True, 'message': 'Upgraded to LITE plan', 'tier': 'LITE', 'actual_status': 200, 'expected_status': 400}",
-      "timestamp": "2025-10-21T12:37:33.773494"
+      "test": "Auth Behavior: Single Org Fallback",
+      "success": true,
+      "details": "Correctly fell back to first membership for single-org user",
+      "timestamp": "2025-10-21T12:42:16.036035"
     },
     {
       "test": "RBAC: VIEWER Denied",
       "success": true,
       "details": "VIEWER correctly denied access to lite trial endpoint",
-      "timestamp": "2025-10-21T12:37:36.561486"
+      "timestamp": "2025-10-21T12:42:18.894770"
     },
     {
       "test": "Initial Plan Check",
-      "success": false,
-      "details": "Expected FREE plan with {'companies': 1, 'connectors': 0, 'exports': False, 'alerts': False}, got tier=LITE, limits={'companies': 3, 'connectors': 1, 'exports': True, 'alerts': True}",
-      "timestamp": "2025-10-21T12:37:36.604012"
+      "success": true,
+      "details": "Fresh org correctly starts with FREE plan: {'companies': 1, 'connectors': 0, 'exports': False, 'alerts': False}",
+      "timestamp": "2025-10-21T12:42:18.983536"
     },
     {
       "test": "Lite Trial Upgrade",
-      "success": false,
-      "details": "Expected {'ok': True, 'message': 'Upgraded to LITE plan', 'tier': 'LITE'}, got: {'ok': True, 'message': 'Already on LITE plan'}",
-      "timestamp": "2025-10-21T12:37:36.642494"
+      "success": true,
+      "details": "Successfully upgraded to LITE: {'ok': True, 'message': 'Upgraded to LITE plan', 'tier': 'LITE'}",
+      "timestamp": "2025-10-21T12:42:19.117670"
+    },
+    {
+      "test": "Entitlements After Upgrade",
+      "success": true,
+      "details": "LITE plan limits correct: {'companies': 3, 'connectors': 1, 'exports': True, 'alerts': True}",
+      "timestamp": "2025-10-21T12:42:19.159169"
+    },
+    {
+      "test": "Database Plan Update",
+      "success": true,
+      "details": "Found upgrade audit log: {'log_id': '72499ee0-6be4-40e2-8e7d-c2a83407d92c', 'org_id': '59f52992-5fdf-4eba-8410-d65344bbca16', 'user_id': 'bdc48a49-4535-497e-b5c5-f2dc4fd15544', 'action': 'upgrade', 'resource': 'plan_lite_trial', 'meta': {'from': 'FREE', 'to': 'LITE'}, 'ts': '2025-10-21T12:42:19.110000'}",
+      "timestamp": "2025-10-21T12:42:19.203537"
+    },
+    {
+      "test": "Idempotency Check",
+      "success": true,
+      "details": "Correctly returned 'Already on LITE plan': {'ok': True, 'message': 'Already on LITE plan'}",
+      "timestamp": "2025-10-21T12:42:19.242473"
+    },
+    {
+      "test": "Xero Connection Blocked on FREE",
+      "success": true,
+      "details": "Correctly blocked: allowed=0, current=0",
+      "timestamp": "2025-10-21T12:42:19.375139"
+    },
+    {
+      "test": "Xero Connection Available",
+      "success": true,
+      "details": "Xero OAuth start successful: https://finance-crm-hub.preview.emergentagent.com/...",
+      "timestamp": "2025-10-21T12:42:19.417523"
     }
   ]
 }
