@@ -14,6 +14,19 @@ export default function FinanceDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  if (!currentOrgId) {
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <h1 className="text-2xl font-semibold mb-2">Finance</h1>
+        <div className="border rounded bg-white p-6">
+          <div className="text-sm text-gray-700 mb-3">No organisation is selected yet.</div>
+          <div className="text-sm text-gray-600 mb-4">Create or choose your organisation to view your Finance dashboard.</div>
+          <button className="bg-black text-white px-4 py-2 rounded" onClick={()=> navigate('/onboarding')} data-testid="go-to-onboarding">Go to Onboarding</button>
+        </div>
+      </div>
+    );
+  }
+
   const canRun = role === "OWNER" || role === "ADMIN" || role === "ANALYST";
 
   const load = async () => {
