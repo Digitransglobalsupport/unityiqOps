@@ -1091,6 +1091,7 @@ async def xero_select_tenant(payload: Dict[str, Any], ctx: RequestContext = Depe
 @api.post("/connections/xero/oauth/callback")
 async def xero_callback(code: str = Form(...), state: str = Form(...)):
     """Mock OAuth callback - accepts form data from mock consent page"""
+    from fastapi.responses import RedirectResponse
     try:
         # Store mock tokens encrypted under org_id resolved via state
         st = await db.oauth_states.find_one({"state": state})
