@@ -238,7 +238,7 @@ class Phase0BackendTester:
             return False
 
     def test_4_xero_mock_oauth(self):
-        """Test 4: Xero mock OAuth flow"""
+        """Test 4: Xero mock OAuth flow (after Lite trial upgrade)"""
         
         if not self.access_token or not self.org_id:
             self.log_test("4. Xero OAuth Prerequisites", False, "Missing access token or org_id")
@@ -247,7 +247,7 @@ class Phase0BackendTester:
         headers = self.get_auth_headers()
         headers["X-Org-Id"] = self.org_id
         
-        # Step 1: Start Xero OAuth (ADMIN role required)
+        # Step 1: Start Xero OAuth (ADMIN role required, needs LITE plan for connectors)
         success, response = self.make_request("POST", "/connections/xero/oauth/start", {
             "org_id": self.org_id
         }, headers=headers)
