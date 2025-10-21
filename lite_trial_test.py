@@ -458,13 +458,17 @@ class LiteTrialTester:
 
     def test_xero_connection_available(self):
         """Test that Xero connection is now available (connector limit > 0)"""
-        headers = self.get_auth_headers()
+        if not hasattr(self, 'upgraded_org_id'):
+            self.log_test("Xero Connection Available", False, "No upgraded org available")
+            return False
+        
+        headers = {"Authorization": f"Bearer {self.access_token}", "X-Org-Id": self.upgraded_org_id}
         
         # Try to start Xero OAuth (should not be blocked by connector limit)
         success, response = self.make_request(
             "POST", 
             "/connections/xero/oauth/start", 
-            data={"org_id": self.test_org["org_id"]},
+            data={"org_id": self.upgraded_org_id},
             headers=headers
         )
         
