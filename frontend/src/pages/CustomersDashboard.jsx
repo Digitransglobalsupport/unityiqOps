@@ -52,7 +52,7 @@ export default function CustomersDashboard() {
     } catch(e){}
   };
 
-  useEffect(()=>{ if(currentOrgId){ loadMasters(); loadOpps(); } }, [currentOrgId, statusFilter]);
+  useEffect(()=>{ if(currentOrgId){ retry.start(); loadOpps(); } }, [currentOrgId, statusFilter, retry]);
 
   if (!currentOrgId) {
     return (
