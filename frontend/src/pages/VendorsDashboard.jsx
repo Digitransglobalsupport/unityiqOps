@@ -72,7 +72,7 @@ export default function VendorsDashboard(){
     <div className="max-w-6xl mx-auto p-6" data-testid="vendors-dashboard">
       <div className="flex items-center justify-between mb-2">
         <div className="text-2xl font-semibold">Vendors</div>
-        <div data-testid="vendors-last-sync-chip" className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">Last sync: —</div>
+        <div data-testid="vendors-last-sync-chip" className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">Last sync: {summary?.last_sync_at ? new Date(summary.last_sync_at).toLocaleString() : '—'}</div>
       </div>
       <Kpis summary={summary} savings={oppSummary} />
 
