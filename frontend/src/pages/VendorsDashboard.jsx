@@ -53,7 +53,7 @@ export default function VendorsDashboard(){
   const loadCats = async () => {
     const { data } = await api.get('/vendors/categories'); setCats(data.categories||[]);
   };
-  useEffect(()=>{ if (currentOrgId){ loadVendors(); loadOpps(); loadCats(); } }, [currentOrgId, status]);
+  useEffect(()=>{ if (currentOrgId){ retry.start(); loadOpps(); loadCats(); } }, [currentOrgId, status, retry]);
 
   if (!currentOrgId) {
     return (
