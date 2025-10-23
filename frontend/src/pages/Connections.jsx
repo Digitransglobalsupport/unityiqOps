@@ -154,6 +154,9 @@ export default function Connections() {
     <div className="max-w-4xl mx-auto p-6" data-testid="connections-page">
       <h1 className="text-2xl font-semibold mb-4">Connections</h1>
       
+      {/* Inline error banner for retriable loads */}
+      <InlineErrorBanner visible={retry.status === 'retrying' && !retry.suppressed} countdownSec={retry.nextRetrySec} onRetryNow={retry.retryNow} onDismiss={retry.dismiss} />
+      
       {error && <div className="text-red-600 text-sm mb-2" role="alert">{String(error)}</div>}
       {message && <div className="text-green-700 text-sm mb-2" role="status">{String(message)}</div>}
 
