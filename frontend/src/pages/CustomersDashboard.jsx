@@ -85,11 +85,20 @@ export default function CustomersDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto p-6" data-testid="customers-dashboard">
+      {/* Inline error banner for retriable loads */}
+      <InlineErrorBanner visible={retry.status === 'retrying' && !retry.suppressed} countdownSec={retry.nextRetrySec} onRetryNow={retry.retryNow} onDismiss={retry.dismiss} />
+      
       <div className="flex items-center justify-between mb-2">
         <div className="text-2xl font-semibold">Customers</div>
         <div className="flex items-center gap-3">
           <div className="text-sm text-gray-600">{stats && <>Masters: <b>{stats.masters}</b> • Shared: <b>{stats.shared_accounts}</b> • Avg conf: <b>{stats.avg_conf}</b></>}</div>
-          <div data-testid="customers-last-sync-chip" className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">Last sync: {lastSync || '—'}</div>
+          <div data-testid="customers-last-sync-chip" className={(() => {
+            if (!lastSync || lastSync === '—') return "text-xs px-2 py-1 rounded bg-gray-100 text-gray-700";
+            const ageH = (Date.now() - new Date(lastSync).getTime()) / 3600000;
+            if (ageH > 72) return "text-xs px-2 py-1 rounded bg-red-100 text-red-700";
+            if (ageH > 24) return "text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800";
+            return "text-xs px-2 py-1 rounded bg-gray-100 text-gray-700";
+          })()}>Last sync: {lastSync || '—'}</div>
         </div>
       </div>
 
