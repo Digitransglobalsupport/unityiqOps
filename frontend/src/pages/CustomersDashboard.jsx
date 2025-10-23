@@ -22,6 +22,17 @@ export default function CustomersDashboard() {
   const canAnalyst = ["ANALYST","ADMIN","OWNER"].includes(role||"");
   const canAdmin = ["ADMIN","OWNER"].includes(role||"");
 
+  // Retriable initial loads
+  const retry = useRetriable(async () => {
+    if (!currentOrgId) return;
+    const { data } = await api.get(`/customers/master?org_id=${currentOrgId}&q=${encodeURIComponent(q)}&min_conf=${minConf}&limit=50`);
+    setMasters(data.items || []);
+    setStats(data.stats || null); 
+    setLastSync(data.last_sync_at ? new Date(data.last_sync_at).toLocaleString() : "");
+    setCursor(data.cursor || null);
+    return true;
+  }, { key: `customers-${currentOrgId}`, onSuccess: ()=>{}, onFail: ()=>{} });
+
   const loadMasters = async (c=null) => {
     setLoading(true); setMsg("");
     try {
