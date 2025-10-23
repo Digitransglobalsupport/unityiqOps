@@ -2718,7 +2718,8 @@ async def vendors_master(org_id: str, q: Optional[str] = None, category: Optiona
     next_cursor = str(page+1) if end < len(arr) else None
     summary = {"vendors": len(items), "shared_vendors": sum(1 for v in items if len(v.get("companies", []))>=2), "annual_spend": sum(v.get("annual_spend",0) for v in items)}
     out = [{k: v.get(k) for k in ["vendor_id","canonical_name","companies","category","annual_spend"]} for v in arr[start:end]]
-    return {"summary": summary, "items": out, "cursor": next_cursor}
+    last_sync_at = doc.get("updated_at")
+    return {"summary": summary, "items": out, "cursor": next_cursor, "last_sync_at": last_sync_at}
 
 @api.get("/opps/savings")
 async def savings_opps_list(org_id: str, status: str = "open", limit: int = 50, ctx: RequestContext = Depends(require_role("VIEWER"))):
