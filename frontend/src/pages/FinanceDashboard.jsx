@@ -46,6 +46,8 @@ export default function FinanceDashboard() {
         </div>
       </div>
     );
+  }
+
   // Retriable initial loads
   const retry = useRetriable(async () => {
     const finance = await api.get(`/dashboard/finance?org_id=${currentOrgId}`);
@@ -54,8 +56,6 @@ export default function FinanceDashboard() {
     try { const ents = await api.get('/billing/entitlements'); setEntitlements(ents.data); } catch {}
     return true;
   }, { key: `fin-${currentOrgId}`, onSuccess: ()=>{}, onFail: ()=>{} });
-
-  }
 
   const canRun = role === "OWNER" || role === "ADMIN" || role === "ANALYST";
 
