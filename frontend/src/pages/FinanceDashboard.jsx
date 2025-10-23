@@ -107,26 +107,8 @@ export default function FinanceDashboard() {
                         canAdmin && 
                         entitlements.plan?.tier === 'FREE' && 
                         entitlements.limits?.connectors === 0;
-        {/* Last sync chip */}
-        {data?.last_sync_at && (
-          <div
-            data-testid="finance-last-sync-chip"
-            className={(() => {
-              const ageH = (Date.now() - new Date(data.last_sync_at).getTime()) / 3600000;
-              if (ageH > 72) return "ml-3 text-xs px-2 py-1 rounded bg-red-100 text-red-700";
-              if (ageH > 24) return "ml-3 text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800";
-              return "ml-3 text-xs px-2 py-1 rounded bg-gray-100 text-gray-700";
-            })()}
-          >
-            Last sync: {new Date(data.last_sync_at).toLocaleString()}
-          </div>
-        )}
-
 
   if (loading) return <div className="p-6">Loading...</div>;
-      {/* Inline error banner for retriable loads */}
-      <InlineErrorBanner visible={retry.status === 'retrying' && !retry.suppressed} countdownSec={retry.nextRetrySec} onRetryNow={retry.retryNow} onDismiss={retry.dismiss} />
-
   if (error) return <div className="p-6 text-red-600">{String(error)}</div>;
 
   return (
