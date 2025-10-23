@@ -345,6 +345,7 @@
 
 ## test_plan:
   current_focus:
+    - "Reliability Features Testing - COMPLETED"
     - "Frontend UI testing for Lite Trial components"
     - "LiteTrialCard component visibility gates and upgrade flow"
     - "LiteTrialSkeleton shows during loading (≤1s)"
