@@ -289,6 +289,54 @@
         agent: "main"
         comment: "Added LiteTrialInline to Finance header when gates met (FREE+ADMIN+0 connectors). Fetches entitlements on mount, shows mini CTA next to 'Finance' title, handleUpgradeSuccess refreshes entitlements and hides inline CTA after successful upgrade."
 
+  - task: "Reliability Features - Inline Error Banners"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/InlineErrorBanner.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Code review confirms InlineErrorBanner component is correctly implemented with proper data-testids (inline-error-banner, inline-error-retry, inline-error-dismiss, inline-error-countdown). Component shows retry countdown, manual retry button, and dismiss functionality. Integrated into all dashboard pages (Finance, Vendors, Customers, Connections)."
+
+  - task: "Reliability Features - useRetriable Hook"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/hooks/useRetriable.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Code review confirms useRetriable hook is correctly implemented with exponential backoff (1,2,4,8,16,30s max), 5xx error retry logic, manual retry capability, and dismiss functionality. Hook properly manages retry state and integrates with InlineErrorBanner component."
+
+  - task: "Reliability Features - Job Monitor Visibility Control"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/JobBar.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Code review confirms JobBar component correctly implements visibility pause/resume functionality. When document.hidden=true, polling stops; when document.hidden=false, immediate fetch occurs and polling resumes. Component has proper data-testids (job-bar, job-phase, job-progress, job-eta, job-run-now)."
+
+  - task: "Reliability Features - Last-sync Chips"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/*.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Code review confirms last-sync chips are correctly implemented on all dashboards with proper data-testids: finance-last-sync-chip, vendors-last-sync-chip, customers-last-sync-chip. Color thresholds work correctly: <24h gray (bg-gray-100), 24-72h yellow (bg-yellow-100), >72h red (bg-red-100). Chips display relative time or em dash when no data."
+
 ## metadata:
   created_by: "main_agent"
   version: "2.1"
