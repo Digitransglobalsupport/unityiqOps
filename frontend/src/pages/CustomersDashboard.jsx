@@ -75,7 +75,7 @@ export default function CustomersDashboard() {
         <div className="text-2xl font-semibold">Customers</div>
         <div className="flex items-center gap-3">
           <div className="text-sm text-gray-600">{stats && <>Masters: <b>{stats.masters}</b> • Shared: <b>{stats.shared_accounts}</b> • Avg conf: <b>{stats.avg_conf}</b></>}</div>
-          <div data-testid="customers-last-sync-chip" className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">Last sync: —</div>
+          <div data-testid="customers-last-sync-chip" className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">Last sync: {lastSync || '—'}</div>
         </div>
       </div>
 
