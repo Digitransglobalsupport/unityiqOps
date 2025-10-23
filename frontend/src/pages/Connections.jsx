@@ -52,7 +52,7 @@ export default function Connections() {
   useEffect(()=>{ 
     if(currentOrgId) {
       console.log('Loading data for org:', currentOrgId, 'Role:', role);
-      load(); 
+      retry.start(); 
       loadEntitlements();
       
       // Track card view if eligible
@@ -64,7 +64,7 @@ export default function Connections() {
       };
       checkEligibility();
     }
-  }, [currentOrgId, role, canAdmin, loadEntitlements]);
+  }, [currentOrgId, role, canAdmin, loadEntitlements, retry]);
 
   const connectXero = async () => {
     try {
