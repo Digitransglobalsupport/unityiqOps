@@ -11,6 +11,7 @@ export default function CustomersDashboard() {
   const [cursor, setCursor] = useState(null);
   const [masters, setMasters] = useState([]);
   const [stats, setStats] = useState(null);
+  const [lastSync, setLastSync] = useState("");
   const [opps, setOpps] = useState([]);
   const [statusFilter, setStatusFilter] = useState("open");
   const [msg, setMsg] = useState("");
