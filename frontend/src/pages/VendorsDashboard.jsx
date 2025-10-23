@@ -32,6 +32,14 @@ export default function VendorsDashboard(){
   const canAnalyst = ["ANALYST","ADMIN","OWNER"].includes(role||"");
   const canAdmin = ["ADMIN","OWNER"].includes(role||"");
 
+  // Retriable initial loads
+  const retry = useRetriable(async () => {
+    if (!currentOrgId) return;
+    const { data } = await api.get(`/vendors/master?org_id=${currentOrgId}&q=${encodeURIComponent(q)}&category=${category}&shared=${shared}&limit=50`);
+    setVendors(data.items||[]); setSummary(data.summary||null);
+    return true;
+  }, { key: `vendors-${currentOrgId}`, onSuccess: ()=>{}, onFail: ()=>{} });
+
   const loadVendors = async () => {
     if (!currentOrgId) return; // short-circuit when orgless
     const { data } = await api.get(`/vendors/master?org_id=${currentOrgId}&q=${encodeURIComponent(q)}&category=${category}&shared=${shared}&limit=50`);
