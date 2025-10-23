@@ -26,7 +26,7 @@ export default function CustomersDashboard() {
       if (!currentOrgId) return; // short-circuit when orgless
       const { data } = await api.get(`/customers/master?org_id=${currentOrgId}&q=${encodeURIComponent(q)}&min_conf=${minConf}&limit=50${c?`&cursor=${c}`:''}`);
       setMasters(data.items || []);
-      setStats(data.stats || null);
+      setStats(data.stats || null); setLastSync(data.last_sync_at ? new Date(data.last_sync_at).toLocaleString() : "");
       setCursor(data.cursor || null);
     } catch(e) { setMsg(e?.response?.data?.detail || 'Failed to load'); }
     finally { setLoading(false); }
