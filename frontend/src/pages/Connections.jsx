@@ -17,6 +17,14 @@ export default function Connections() {
   const [polling, setPolling] = useState(false);
   const canAdmin = ["OWNER","ADMIN"].includes(role||"");
 
+  // Retriable initial loads
+  const retry = useRetriable(async () => {
+    if (!currentOrgId) return;
+    const { data } = await api.get(`/connections/status?org_id=${currentOrgId}`);
+    setStatus(data);
+    return true;
+  }, { key: `connections-${currentOrgId}`, onSuccess: ()=>{}, onFail: ()=>{} });
+
   const loadEntitlements = useCallback(async () => {
     try {
       const { data } = await api.get('/billing/entitlements');
