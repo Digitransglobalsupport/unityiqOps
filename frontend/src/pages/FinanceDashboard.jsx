@@ -113,11 +113,28 @@ export default function FinanceDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-4" data-testid="finance-dashboard">
+      {/* Inline error banner for retriable loads */}
+      <InlineErrorBanner visible={retry.status === 'retrying' && !retry.suppressed} countdownSec={retry.nextRetrySec} onRetryNow={retry.retryNow} onDismiss={retry.dismiss} />
+      
       {/* Header strip */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-semibold">Finance</h1>
           {showInlineCTA && <LiteTrialInline onUpgradeSuccess={handleUpgradeSuccess} />}
+          {/* Last sync chip */}
+          {data?.last_sync_at && (
+            <div
+              data-testid="finance-last-sync-chip"
+              className={(() => {
+                const ageH = (Date.now() - new Date(data.last_sync_at).getTime()) / 3600000;
+                if (ageH > 72) return "ml-3 text-xs px-2 py-1 rounded bg-red-100 text-red-700";
+                if (ageH > 24) return "ml-3 text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800";
+                return "ml-3 text-xs px-2 py-1 rounded bg-gray-100 text-gray-700";
+              })()}
+            >
+              Last sync: {new Date(data.last_sync_at).toLocaleString()}
+            </div>
+          )}
         </div>
         <DataHealthPill connection={data?.connection} onReconnect={reconnect} onRetry={load} />
       </div>
